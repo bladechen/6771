@@ -6,33 +6,6 @@
 #include <algorithm>
 #include <vector>
 
-
-std::vector<std::string> string_split(const std::string& s, const std::string& delim)
-{
-    std::vector<std::string> result;
-    if (delim.empty())
-    {
-        result.push_back(s);
-        return result;
-    }
-    std::string::const_iterator substart = s.begin(), subend;
-    while (true)
-    {
-        subend = std::search(substart, s.end(), delim.begin(), delim.end());
-        std::string temp(substart, subend);
-        if ( !temp.empty())
-        {
-            result.push_back(temp);
-        }
-        if (subend == s.end())
-        {
-            break;
-        }
-        substart = subend + delim.size();
-    }
-    return result;
-}
-
 struct Digit
 {
     int inum;
@@ -59,12 +32,58 @@ struct Digit
         this->inum = right.inum;
         this->dnum = right.dnum;
     }
+    double get_number()
+    {
+        return this->is_int ?this->inum : this->dnum;
+    }
+    Digit sqrt()
+    {
+        if (this->is_int)
+        {
+            return Digit( (int)::sqrt((double)(this->inum)));
+        }
+        else
+        {
+            return Digit( (double)::sqrt(this->dnum));
+        }
+    }
     friend Digit operator + (const Digit& a, const Digit& b )
     {
+        // std::cout << a << " + " << b << " = " << std::endl;
         if (a.is_int && b.is_int) return Digit(a.inum + b.inum);
         else if ( a.is_int == false && b.is_int ) return Digit(a.dnum + b.inum);
         else if (a.is_int && b.is_int == false) return Digit(a.inum + b.dnum);
         else return Digit(a.dnum + b.dnum);
+    }
+
+    friend Digit operator * (const Digit& a, const Digit& b )
+    {
+        if (a.is_int && b.is_int) return Digit(a.inum * b.inum);
+        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum * b.inum);
+        else if (a.is_int && b.is_int == false) return Digit(a.inum * b.dnum);
+        else return Digit(a.dnum * b.dnum);
+    }
+
+    friend Digit operator / (const Digit& a, const Digit& b )
+    {
+        if (a.is_int && b.is_int) return Digit(a.inum / b.inum);
+        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum / b.inum);
+        else if (a.is_int && b.is_int == false) return Digit(a.inum / b.dnum);
+        else return Digit(a.dnum / b.dnum);
+    }
+
+    friend Digit operator - (const Digit& a, const Digit& b )
+    {
+        if (a.is_int && b.is_int) return Digit(a.inum - b.inum);
+        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum - b.inum);
+        else if (a.is_int && b.is_int == false) return Digit(a.inum - b.dnum);
+        else return Digit(a.dnum - b.dnum);
+    }
+    friend std::ostream& operator << (std::ostream& out, const Digit& a)
+    {
+        if (a.is_int) out << a.inum;
+        else out << a.dnum;
+        return out;
     }
 };
 
@@ -84,7 +103,7 @@ bool is_double(const std::string& s)
 {
     for (size_t i = 0; i < s.size(); i ++)
     {
-        if (isdigit(s[i]) ==  false || s[i] != '.')
+        if (isdigit(s[i]) ==  false && s[i] != '.')
         {
             return false;
         }
@@ -119,28 +138,63 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 
         Digit a = get_next_digit(st);
         Digit b = get_next_digit(st);
-        st.push(a + b);
+        Digit c = a + b;
+        std::cout << a << " + " << b << " = " << c << std::endl;
+        st.push(c);
     }
     else if (next_symbol == "sub")
     {
+        if (st.size() < 2) return false;
 
+        Digit a = get_next_digit(st);
+        Digit b = get_next_digit(st);
+        Digit c = a - b;
+        std::cout << a << " - " << b << " = " << c << std::endl;
+        st.push(c);
     }
     else if (next_symbol == "div")
     {
+        if (st.size() < 2) return false;
 
+        Digit a = get_next_digit(st);
+        Digit b = get_next_digit(st);
+        Digit c = a / b;
+        std::cout << a << " / " << b << " = " << c << std::endl;
+        st.push(c);
     }
     else if (next_symbol == "mult")
     {
+        if (st.size() < 2) return false;
 
+        Digit a = get_next_digit(st);
+        Digit b = get_next_digit(st);
+        Digit c = a * b;
+        std::cout << a << " * " << b << " = " << c << std::endl;
+        st.push(c);
     }
     else if (next_symbol == "sqrt")
     {
-
+        if (st.size() < 1) return false;
+        Digit a = get_next_digit(st);
+        Digit b = a.sqrt();
+        std::cout << "sqrt " << a << " = " << b << std::endl;
+        st.push(b);
     }
-    // else if (next_symbol == "revsese")
-    // {
-    //
-    // }
+    else if (next_symbol == "reverse")
+    {
+        if (st.size() < 1) return false;
+        int reverse_number = (int)(get_next_digit(st).get_number());
+        if ((int)st.size () < reverse_number) return false;
+        std::vector<Digit> tmp;
+        while (reverse_number --)
+        {
+            tmp.push_back(get_next_digit(st));
+        }
+        for (size_t i = 0; i < tmp.size(); ++ i)
+        {
+            st.push(tmp[i]);
+        }
+    }
     else
     {
         return false;
@@ -152,11 +206,12 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 void calc(const std::vector<std::string> & input)
 {
     std::stack<Digit> st;
-    // bool repeated = 0;
 
     bool repeated = false;
     std::vector<std::string> repeat_tokens;
     repeat_tokens.clear();
+    int repeat_count = 0;
+    // FIXME nested repeat
     for (size_t i = 0; i < input.size(); ++ i)
     {
         std::string cur_symbol = input[i];
@@ -165,7 +220,13 @@ void calc(const std::vector<std::string> & input)
             if (cur_symbol == "endrepeat")
             {
                 repeated = false;
-                // TODO calculate
+                for (int k = 0; k < repeat_count; ++ k)
+                {
+                    for (size_t j = 0; j < repeat_tokens.size(); ++ j)
+                    {
+                        do_calc(repeat_tokens[j], st);
+                    }
+                }
             }
             else
             {
@@ -178,13 +239,12 @@ void calc(const std::vector<std::string> & input)
             {
                 repeated = true;
                 repeat_tokens.clear();
+                repeat_count = (int)(get_next_digit(st).get_number());
             }
-            // else if (cur_symbol == "")
-            // {
-            //
-            //
-            // }
-
+            else
+            {
+                do_calc(cur_symbol, st);
+            }
         }
     }
     return;
@@ -213,12 +273,6 @@ int main(int argc, char* argv[])
         input.push_back(s);
 	}
 	in.close();
-    Digit a(1.4);
-    Digit b(20);
-    Digit c = a + b;
-    std:: cout <<c.dnum << std::endl;
-    std::cout << c.is_int << std::endl;
-    // calc(input);
-
+    calc(input);
     return 0;
 }

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <assert.h>
+
 struct Digit
 {
     int inum;
@@ -79,6 +81,7 @@ struct Digit
         else if (a.is_int && b.is_int == false) return Digit(a.inum - b.dnum);
         else return Digit(a.dnum - b.dnum);
     }
+
     friend std::ostream& operator << (std::ostream& out, const Digit& a)
     {
         if (a.is_int) out << a.inum;
@@ -113,6 +116,7 @@ bool is_double(const std::string& s)
 
 Digit get_next_digit(std::stack<Digit>& st)
 {
+    assert(st.size() >= 1);
     Digit a = st.top();
     st.pop();
     return a;
@@ -203,11 +207,11 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 }
 
 
-void calc(const std::vector<std::string> & input)
+std::stack<Digit> st;
+int repeated_nested_depth = 0;
+void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 {
-    std::stack<Digit> st;
-
-    bool repeated = false;
+    // bool repeated = false;
     std::vector<std::string> repeat_tokens;
     repeat_tokens.clear();
     int repeat_count = 0;
@@ -215,36 +219,46 @@ void calc(const std::vector<std::string> & input)
     for (size_t i = 0; i < input.size(); ++ i)
     {
         std::string cur_symbol = input[i];
-        if (repeated == true)
+        if (cur_symbol == "repeat")
         {
-            if (cur_symbol == "endrepeat")
+            // repeated = true;
+            repeat_tokens.clear();
+            repeat_count = (int)(get_next_digit(st).get_number());
+            // find next related endrepeat
+            int tmp_count = 1;
+            int next_idx = -1;
+            std::vector<std::string> nest_repeat_symbol;
+            for (size_t j = i + 1; j < input.size(); ++ j)
             {
-                repeated = false;
-                for (int k = 0; k < repeat_count; ++ k)
+                if (input[j] == "repeat")
                 {
-                    for (size_t j = 0; j < repeat_tokens.size(); ++ j)
+                    tmp_count ++;
+                }
+                else if (input[j] == "endrepeat")
+                {
+                    tmp_count --;
+                    if (tmp_count == 0)
                     {
-                        do_calc(repeat_tokens[j], st);
+                        next_idx = (int) j;
+                        break;
                     }
                 }
+                nest_repeat_symbol.push_back(input[j]);
             }
-            else
+            if (next_idx == -1)
             {
-                repeat_tokens.push_back(cur_symbol);
+                std::cout <<"something error" << std::endl;
+                return;
             }
+            for (int j = 0; j < repeat_count; ++ j)
+            {
+                calc(nest_repeat_symbol, st);
+            }
+            i = next_idx;
         }
         else
         {
-            if (cur_symbol == "repeat")
-            {
-                repeated = true;
-                repeat_tokens.clear();
-                repeat_count = (int)(get_next_digit(st).get_number());
-            }
-            else
-            {
-                do_calc(cur_symbol, st);
-            }
+            do_calc(cur_symbol, st);
         }
     }
     return;
@@ -273,6 +287,6 @@ int main(int argc, char* argv[])
         input.push_back(s);
 	}
 	in.close();
-    calc(input);
+    calc(input, st);
     return 0;
 }

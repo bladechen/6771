@@ -70,17 +70,6 @@ edit_cache/fast: edit_cache
 
 .PHONY : edit_cache/fast
 
-# Special rule for the target test
-test:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
-	/usr/bin/ctest --force-new-ctest-process $(ARGS)
-.PHONY : test
-
-# Special rule for the target test
-test/fast: test
-
-.PHONY : test/fast
-
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
@@ -92,16 +81,27 @@ rebuild_cache/fast: rebuild_cache
 
 .PHONY : rebuild_cache/fast
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+
+.PHONY : test/fast
+
 # The main all target
 all: cmake_check_build_system
-	cd /home/ubuntu/6771 && $(CMAKE_COMMAND) -E cmake_progress_start /home/ubuntu/6771/CMakeFiles /home/ubuntu/6771/asst1/CMakeFiles/progress.marks
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/all
+	cd /home/ubuntu/6771 && $(CMAKE_COMMAND) -E cmake_progress_start /home/ubuntu/6771/CMakeFiles /home/ubuntu/6771/lecture/01/CMakeFiles/progress.marks
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/ubuntu/6771/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/clean
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/clean
 .PHONY : clean
 
 # The main clean target
@@ -111,60 +111,18 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/preinstall
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/preinstall
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
 	cd /home/ubuntu/6771 && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
-
-# Convenience name for target.
-asst1/CMakeFiles/calculator.dir/rule:
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/CMakeFiles/calculator.dir/rule
-.PHONY : asst1/CMakeFiles/calculator.dir/rule
-
-# Convenience name for target.
-calculator: asst1/CMakeFiles/calculator.dir/rule
-
-.PHONY : calculator
-
-# fast build rule for target.
-calculator/fast:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/build
-.PHONY : calculator/fast
-
-calculator.o: calculator.cpp.o
-
-.PHONY : calculator.o
-
-# target to build an object file
-calculator.cpp.o:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/calculator.cpp.o
-.PHONY : calculator.cpp.o
-
-calculator.i: calculator.cpp.i
-
-.PHONY : calculator.i
-
-# target to preprocess a source file
-calculator.cpp.i:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/calculator.cpp.i
-.PHONY : calculator.cpp.i
-
-calculator.s: calculator.cpp.s
-
-.PHONY : calculator.s
-
-# target to generate assembly for a file
-calculator.cpp.s:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/calculator.cpp.s
-.PHONY : calculator.cpp.s
 
 # Help Target
 help:
@@ -173,12 +131,8 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
-	@echo "... test"
-	@echo "... calculator"
 	@echo "... rebuild_cache"
-	@echo "... calculator.o"
-	@echo "... calculator.i"
-	@echo "... calculator.s"
+	@echo "... test"
 .PHONY : help
 
 

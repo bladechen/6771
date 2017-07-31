@@ -267,6 +267,7 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 int main(int argc, char* argv[])
 {
 
+    (void) argc;
 	// setup the print out format for the precision required.
 	std::cout.setf(std::ios::fixed,std::ios::floatfield);
 	std::cout.precision(3);

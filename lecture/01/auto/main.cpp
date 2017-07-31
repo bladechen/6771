@@ -5,7 +5,7 @@ int main()
     const int &i = 1; // int
     auto j = i; // int
 
-    i= 100;
     j = 10;
+    printf ("%d\n", j);
 
 }

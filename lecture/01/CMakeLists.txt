@@ -1,0 +1,5 @@
+add_subdirectory(auto)
+add_subdirectory(header)
+add_subdirectory(overloading)
+add_subdirectory(sign)
+add_subdirectory(types)

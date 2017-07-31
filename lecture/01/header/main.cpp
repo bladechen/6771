@@ -26,16 +26,16 @@ int main()
 
 
     // char *const cp1 = cc;
-    const char* const cp2 = cc;
+    // const char* const cp2 = cc;
 
-    const int ii = 6;
+    // const int ii = 6;
     // int &i1 = ii;
 
     const int &it = i;
 
     int& i2 = i;
 
-    printf ("%x %x %x\n", &i, &it, &i2);
+    printf ("%p %p %p\n", (void*)&i, (void*)&it, (void*)&i2);
 
     const int &iii = 1;
     auto j = iii;

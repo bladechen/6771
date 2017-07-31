@@ -5,7 +5,7 @@ namespace X
     int i;
     int j;
     int k;
-};
+}
 int k;
 
 // void f(int a, int a)
@@ -15,7 +15,7 @@ int k;
 namespace Y
 {
     int i;
-};
+}
 
 int main()
 {

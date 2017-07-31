@@ -94,14 +94,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/ubuntu/6771 && $(CMAKE_COMMAND) -E cmake_progress_start /home/ubuntu/6771/CMakeFiles /home/ubuntu/6771/asst1/CMakeFiles/progress.marks
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/all
+	cd /home/ubuntu/6771 && $(CMAKE_COMMAND) -E cmake_progress_start /home/ubuntu/6771/CMakeFiles /home/ubuntu/6771/lecture/01/overloading/CMakeFiles/progress.marks
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/overloading/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/ubuntu/6771/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/clean
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/overloading/clean
 .PHONY : clean
 
 # The main clean target
@@ -111,12 +111,12 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/preinstall
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/overloading/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/preinstall
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/overloading/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
@@ -125,46 +125,46 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-asst1/CMakeFiles/calculator.dir/rule:
-	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 asst1/CMakeFiles/calculator.dir/rule
-.PHONY : asst1/CMakeFiles/calculator.dir/rule
+lecture/01/overloading/CMakeFiles/overloading.dir/rule:
+	cd /home/ubuntu/6771 && $(MAKE) -f CMakeFiles/Makefile2 lecture/01/overloading/CMakeFiles/overloading.dir/rule
+.PHONY : lecture/01/overloading/CMakeFiles/overloading.dir/rule
 
 # Convenience name for target.
-calculator: asst1/CMakeFiles/calculator.dir/rule
+overloading: lecture/01/overloading/CMakeFiles/overloading.dir/rule
 
-.PHONY : calculator
+.PHONY : overloading
 
 # fast build rule for target.
-calculator/fast:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/build
-.PHONY : calculator/fast
+overloading/fast:
+	cd /home/ubuntu/6771 && $(MAKE) -f lecture/01/overloading/CMakeFiles/overloading.dir/build.make lecture/01/overloading/CMakeFiles/overloading.dir/build
+.PHONY : overloading/fast
 
-calculator.o: calculator.cpp.o
+main.o: main.cpp.o
 
-.PHONY : calculator.o
+.PHONY : main.o
 
 # target to build an object file
-calculator.cpp.o:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/calculator.cpp.o
-.PHONY : calculator.cpp.o
+main.cpp.o:
+	cd /home/ubuntu/6771 && $(MAKE) -f lecture/01/overloading/CMakeFiles/overloading.dir/build.make lecture/01/overloading/CMakeFiles/overloading.dir/main.cpp.o
+.PHONY : main.cpp.o
 
-calculator.i: calculator.cpp.i
+main.i: main.cpp.i
 
-.PHONY : calculator.i
+.PHONY : main.i
 
 # target to preprocess a source file
-calculator.cpp.i:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/calculator.cpp.i
-.PHONY : calculator.cpp.i
+main.cpp.i:
+	cd /home/ubuntu/6771 && $(MAKE) -f lecture/01/overloading/CMakeFiles/overloading.dir/build.make lecture/01/overloading/CMakeFiles/overloading.dir/main.cpp.i
+.PHONY : main.cpp.i
 
-calculator.s: calculator.cpp.s
+main.s: main.cpp.s
 
-.PHONY : calculator.s
+.PHONY : main.s
 
 # target to generate assembly for a file
-calculator.cpp.s:
-	cd /home/ubuntu/6771 && $(MAKE) -f asst1/CMakeFiles/calculator.dir/build.make asst1/CMakeFiles/calculator.dir/calculator.cpp.s
-.PHONY : calculator.cpp.s
+main.cpp.s:
+	cd /home/ubuntu/6771 && $(MAKE) -f lecture/01/overloading/CMakeFiles/overloading.dir/build.make lecture/01/overloading/CMakeFiles/overloading.dir/main.cpp.s
+.PHONY : main.cpp.s
 
 # Help Target
 help:
@@ -174,11 +174,11 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... test"
-	@echo "... calculator"
+	@echo "... overloading"
 	@echo "... rebuild_cache"
-	@echo "... calculator.o"
-	@echo "... calculator.i"
-	@echo "... calculator.s"
+	@echo "... main.o"
+	@echo "... main.i"
+	@echo "... main.s"
 .PHONY : help
 
 

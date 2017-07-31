@@ -207,15 +207,12 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 }
 
 
-std::stack<Digit> st;
-int repeated_nested_depth = 0;
 void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 {
     // bool repeated = false;
     std::vector<std::string> repeat_tokens;
     repeat_tokens.clear();
     int repeat_count = 0;
-    // FIXME nested repeat
     for (size_t i = 0; i < input.size(); ++ i)
     {
         std::string cur_symbol = input[i];
@@ -258,7 +255,11 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
         }
         else
         {
-            do_calc(cur_symbol, st);
+            if (do_calc(cur_symbol, st) == false)
+            {
+                std::cout <<"something error" << std::endl;
+                return;
+            }
         }
     }
     return;
@@ -288,6 +289,8 @@ int main(int argc, char* argv[])
         input.push_back(s);
 	}
 	in.close();
+
+    std::stack<Digit> st;
     calc(input, st);
     return 0;
 }

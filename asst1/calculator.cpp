@@ -1,85 +1,98 @@
-#include <iostream>
-#include <cmath>
-#include <string>
-#include <stack>
-#include <fstream>
 #include <algorithm>
+#include <cmath>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <stack>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
-#include <assert.h>
-
-struct Digit
+class Digit
 {
-    int inum;
-    double dnum;
-    bool is_int;
-    Digit(int i)
+private:
+    int inum = 0;
+    double dnum = 0.0;
+    bool is_int = true;
+
+public:
+    Digit(int i):inum{i}, is_int{true}
     {
-        inum = i;
-        is_int = 1;
+
     }
-    Digit(double d)
+
+    Digit(double d): dnum{d}, is_int{false}
     {
-        dnum = d;
-        is_int = 0;
+
     }
-    Digit()
+
+    Digit(){}
+
+    Digit(const Digit& right): inum{right.inum}, dnum{right.dnum}, is_int{right.is_int}
     {
-        inum = 0;
-        is_int = 0;
+
     }
-    Digit(const Digit& right)
+
+    int get_int() const
     {
-        this->is_int = right.is_int;
-        this->inum = right.inum;
-        this->dnum = right.dnum;
+        if (! this->is_int )
+        {
+            throw std::invalid_argument("get_int, but it is double\n");
+        }
+        return this->inum;
     }
-    double get_number()
-    {
-        return this->is_int ?this->inum : this->dnum;
-    }
-    Digit sqrt()
+
+    // sqrt(int) should return int.
+    Digit sqrt() const
     {
         if (this->is_int)
         {
-            return Digit( (int)::sqrt((double)(this->inum)));
+            if (this->inum < 0)
+            {
+                throw std::invalid_argument("sqrt negative number\n");
+            }
+            return Digit{static_cast<int>(::sqrt(static_cast<double>(this->inum)))};
         }
         else
         {
-            return Digit( (double)::sqrt(this->dnum));
+            if (this->dnum < 0)
+            {
+                throw std::invalid_argument("sqrt negative number\n");
+            }
+            return Digit{static_cast<double>(::sqrt((this->dnum)))};
         }
     }
+
     friend Digit operator + (const Digit& a, const Digit& b )
     {
-        // std::cout << a << " + " << b << " = " << std::endl;
-        if (a.is_int && b.is_int) return Digit(a.inum + b.inum);
-        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum + b.inum);
-        else if (a.is_int && b.is_int == false) return Digit(a.inum + b.dnum);
-        else return Digit(a.dnum + b.dnum);
+        if (a.is_int && b.is_int) return Digit{a.inum + b.inum};
+        else if ( a.is_int == false && b.is_int ) return Digit{a.dnum + b.inum};
+        else if (a.is_int && b.is_int == false) return Digit{a.inum + b.dnum};
+        else return Digit{a.dnum + b.dnum};
     }
 
     friend Digit operator * (const Digit& a, const Digit& b )
     {
-        if (a.is_int && b.is_int) return Digit(a.inum * b.inum);
-        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum * b.inum);
-        else if (a.is_int && b.is_int == false) return Digit(a.inum * b.dnum);
-        else return Digit(a.dnum * b.dnum);
+        if (a.is_int && b.is_int) return Digit{a.inum * b.inum};
+        else if (a.is_int == false && b.is_int ) return Digit{a.dnum * b.inum};
+        else if (a.is_int && b.is_int == false) return Digit{a.inum * b.dnum};
+        else return Digit{a.dnum * b.dnum};
     }
 
     friend Digit operator / (const Digit& a, const Digit& b )
     {
-        if (a.is_int && b.is_int) return Digit(a.inum / b.inum);
-        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum / b.inum);
-        else if (a.is_int && b.is_int == false) return Digit(a.inum / b.dnum);
-        else return Digit(a.dnum / b.dnum);
+        if (a.is_int && b.is_int) return Digit{a.inum / b.inum};
+        else if ( a.is_int == false && b.is_int ) return Digit{a.dnum / b.inum};
+        else if (a.is_int && b.is_int == false) return Digit{a.inum / b.dnum};
+        else return Digit{a.dnum / b.dnum};
     }
 
     friend Digit operator - (const Digit& a, const Digit& b )
     {
-        if (a.is_int && b.is_int) return Digit(a.inum - b.inum);
-        else if ( a.is_int == false && b.is_int ) return Digit(a.dnum - b.inum);
-        else if (a.is_int && b.is_int == false) return Digit(a.inum - b.dnum);
-        else return Digit(a.dnum - b.dnum);
+        if (a.is_int && b.is_int) return Digit{a.inum - b.inum};
+        else if ( a.is_int == false && b.is_int ) return Digit{a.dnum - b.inum};
+        else if (a.is_int && b.is_int == false) return Digit{a.inum - b.dnum};
+        else return Digit{a.dnum - b.dnum};
     }
 
     friend std::ostream& operator << (std::ostream& out, const Digit& a)
@@ -92,9 +105,9 @@ struct Digit
 
 bool is_int(const std::string& s)
 {
-    for (size_t i = 0; i < s.size(); i ++)
+    for (const auto& i : s)
     {
-        if (!isdigit(s[i]))
+        if (!isdigit(i))
         {
             return false;
         }
@@ -104,9 +117,9 @@ bool is_int(const std::string& s)
 
 bool is_double(const std::string& s)
 {
-    for (size_t i = 0; i < s.size(); i ++)
+    for (const auto& i : s)
     {
-        if (isdigit(s[i]) ==  false && s[i] != '.')
+        if (isdigit(i) == false && i != '.')
         {
             return false;
         }
@@ -116,21 +129,24 @@ bool is_double(const std::string& s)
 
 Digit get_next_digit(std::stack<Digit>& st)
 {
-    assert(st.size() >= 1);
+    if (st.size() < 1)
+    {
+        throw std::invalid_argument("no elem pop from stack, invalid input!");
+    }
     Digit a = st.top();
     st.pop();
     return a;
 }
 
-bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
+void do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 {
     if (is_int(next_symbol))
     {
-        st.push(Digit(std::stoi(next_symbol)));
+        st.push(Digit{std::stoi(next_symbol)});
     }
     else if (is_double(next_symbol))
     {
-        st.push(Digit(std::stod(next_symbol)));
+        st.push(Digit{std::stod(next_symbol)});
     }
     else if (next_symbol == "pop")
     {
@@ -138,7 +154,8 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
     }
     else if (next_symbol == "add")
     {
-        if (st.size() < 2) return false;
+        if (st.size() < 2)
+            throw std::invalid_argument("no enough number to add, invalid input!");
 
         Digit a = get_next_digit(st);
         Digit b = get_next_digit(st);
@@ -148,7 +165,8 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
     }
     else if (next_symbol == "sub")
     {
-        if (st.size() < 2) return false;
+        if (st.size() < 2)
+            throw std::invalid_argument("no enough number to sub, invalid input!");
 
         Digit a = get_next_digit(st);
         Digit b = get_next_digit(st);
@@ -158,7 +176,9 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
     }
     else if (next_symbol == "div")
     {
-        if (st.size() < 2) return false;
+
+        if (st.size() < 2)
+            throw std::invalid_argument("no enough number to div, invalid input!");
 
         Digit a = get_next_digit(st);
         Digit b = get_next_digit(st);
@@ -168,7 +188,8 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
     }
     else if (next_symbol == "mult")
     {
-        if (st.size() < 2) return false;
+        if (st.size() < 2)
+            throw std::invalid_argument("no enough number to mult, invalid input!");
 
         Digit a = get_next_digit(st);
         Digit b = get_next_digit(st);
@@ -178,7 +199,9 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
     }
     else if (next_symbol == "sqrt")
     {
-        if (st.size() < 1) return false;
+        if (st.size() < 1)
+            throw std::invalid_argument("no enough number to sqrt, invalid input!");
+
         Digit a = get_next_digit(st);
         Digit b = a.sqrt();
         std::cout << "sqrt " << a << " = " << b << std::endl;
@@ -186,41 +209,45 @@ bool do_calc(const std::string& next_symbol, std::stack<Digit>& st)
     }
     else if (next_symbol == "reverse")
     {
-        if (st.size() < 1) return false;
-        int reverse_number = (int)(get_next_digit(st).get_number());
-        if ((int)st.size () < reverse_number) return false;
-        std::vector<Digit> tmp;
+        if (st.size() < 1)
+             throw std::invalid_argument("no enough number to reverse, invalid input!");
+
+        Digit tmp = get_next_digit(st);
+
+        // reverse should first get a integer from the stack top, then try to reverse the number of digit in the stack
+        int reverse_number = tmp.get_int();
+        if (static_cast<int>(st.size()) < reverse_number)
+            throw std::invalid_argument("no enough number to reverse, invalid input!");
+
+        std::vector<Digit> tmp_vec;
         while (reverse_number --)
         {
-            tmp.push_back(get_next_digit(st));
+            tmp_vec.push_back(get_next_digit(st));
         }
-        for (size_t i = 0; i < tmp.size(); ++ i)
+        for (auto i : tmp_vec)
         {
-            st.push(tmp[i]);
+            st.push(i);
         }
     }
     else
     {
-        return false;
+        throw std::invalid_argument("strange symbol, invalid input!");
     }
-    return true;
 }
-
 
 void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 {
-    // bool repeated = false;
     std::vector<std::string> repeat_tokens;
-    repeat_tokens.clear();
-    int repeat_count = 0;
+    // should use index to handle nested repeat easily.
+    // not be banned in the asst spec. so i use it.
     for (size_t i = 0; i < input.size(); ++ i)
     {
-        std::string cur_symbol = input[i];
+        const std::string& cur_symbol = input[i];
         if (cur_symbol == "repeat")
         {
-            // repeated = true;
             repeat_tokens.clear();
-            repeat_count = (int)(get_next_digit(st).get_number());
+            Digit tmp = get_next_digit(st);
+            int repeat_count = tmp.get_int();
             // find next related endrepeat
             int tmp_count = 1;
             int next_idx = -1;
@@ -236,7 +263,7 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
                     tmp_count --;
                     if (tmp_count == 0)
                     {
-                        next_idx = (int) j;
+                        next_idx = static_cast<int>(j);
                         break;
                     }
                 }
@@ -244,22 +271,17 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
             }
             if (next_idx == -1)
             {
-                std::cout <<"something error" << std::endl;
-                return;
+                throw std::invalid_argument("repeat error?, invalid input!");
             }
-            for (int j = 0; j < repeat_count; ++ j)
+            while (repeat_count --)
             {
                 calc(nest_repeat_symbol, st);
             }
-            i = next_idx;
+            i = next_idx; // index to the related endrepeat
         }
         else
         {
-            if (do_calc(cur_symbol, st) == false)
-            {
-                std::cout <<"something error" << std::endl;
-                return;
-            }
+            do_calc(cur_symbol, st);
         }
     }
     return;
@@ -267,8 +289,11 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 
 int main(int argc, char* argv[])
 {
-
-    (void) argc;
+    if (argc != 2)
+    {
+        std::cout << "argv count error" << std::endl;
+        return -1;
+    }
 	// setup the print out format for the precision required.
 	std::cout.setf(std::ios::fixed,std::ios::floatfield);
 	std::cout.precision(3);

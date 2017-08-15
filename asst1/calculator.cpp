@@ -1,3 +1,9 @@
+/// @file:   calculator.cpp
+/// @brief:  a simple stack based calculator
+/// @author: bladechen
+///
+/// 2017-08-15
+
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -10,6 +16,8 @@
 
 class Digit
 {
+    // maybe we should put private data declaration in the end of the Digit class.
+    // but put here to be more outstanding.
 private:
     int inum = 0;
     double dnum = 0.0;
@@ -26,40 +34,42 @@ public:
 
     }
 
-    Digit(){}
+    // Digit(){}
+    //
+    // Digit(const Digit& right): inum{right.inum}, dnum{right.dnum}, is_int{right.is_int}
+    // {
+    //
+    // }
 
-    Digit(const Digit& right): inum{right.inum}, dnum{right.dnum}, is_int{right.is_int}
-    {
-
-    }
-
+    // the caller expect an integer, if the stack top is a double, simply Exception.
     int get_int() const
     {
-        if (! this->is_int )
+        if (! is_int )
         {
             throw std::invalid_argument("get_int, but it is double\n");
         }
-        return this->inum;
+        return inum;
     }
 
     // sqrt(int) should return int.
+    // sqrt(double) return double.
     Digit sqrt() const
     {
-        if (this->is_int)
+        if (is_int)
         {
-            if (this->inum < 0)
+            if (inum < 0)
             {
                 throw std::invalid_argument("sqrt negative number\n");
             }
-            return Digit{static_cast<int>(::sqrt(static_cast<double>(this->inum)))};
+            return Digit{static_cast<int>(::sqrt(static_cast<double>(inum)))};
         }
         else
         {
-            if (this->dnum < 0)
+            if (dnum < 0)
             {
                 throw std::invalid_argument("sqrt negative number\n");
             }
-            return Digit{static_cast<double>(::sqrt((this->dnum)))};
+            return Digit{::sqrt(dnum)};
         }
     }
 
@@ -107,7 +117,8 @@ bool is_int(const std::string& s)
 {
     for (const auto& i : s)
     {
-        if (!isdigit(i))
+        // XXX no negative input, i!='-' is only for my own test purpose.
+        if (isdigit(i) == false && i != '-')
         {
             return false;
         }
@@ -119,7 +130,7 @@ bool is_double(const std::string& s)
 {
     for (const auto& i : s)
     {
-        if (isdigit(i) == false && i != '.')
+        if (isdigit(i) == false && i != '.' && i != '-')
         {
             return false;
         }
@@ -238,7 +249,7 @@ void do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 {
     std::vector<std::string> repeat_tokens;
-    // should use index to handle nested repeat easily.
+    // should use vector index to handle nested repeat easily.
     // not be banned in the asst spec. so i use it.
     for (size_t i = 0; i < input.size(); ++ i)
     {
@@ -249,8 +260,8 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
             Digit tmp = get_next_digit(st);
             int repeat_count = tmp.get_int();
             // find next related endrepeat
-            int tmp_count = 1;
-            int next_idx = -1;
+            int tmp_count = 1; // count for repeat/endrepeat
+            int next_idx = -1; // the next related endrepeat
             std::vector<std::string> nest_repeat_symbol;
             for (size_t j = i + 1; j < input.size(); ++ j)
             {

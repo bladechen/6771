@@ -49,6 +49,8 @@ EuclideanVector& EuclideanVector::operator=(const EuclideanVector& rhs)
     if (this != &rhs)
     {
         _deep_copy(rhs);
+        _invalid_cache();
+
     }
     return *this;
 
@@ -60,6 +62,7 @@ EuclideanVector& EuclideanVector::operator=(EuclideanVector&& rhs)
     {
         _shallow_copy(rhs);
         _shallow_free(rhs);
+        _invalid_cache();
     }
     return *this;
 
@@ -80,6 +83,7 @@ std::ostream& operator<<(std::ostream &os, const EuclideanVector &v)
 double& EuclideanVector::operator[] (int index)
 {
     assert(_valid_index(index));
+    _invalid_cache();
     return _array[index];
 }
 
@@ -99,6 +103,7 @@ EuclideanVector& EuclideanVector::operator+=(const EuclideanVector &rhs)
         _array[i] += rhs._array[i];
 
     }
+    _invalid_cache();
     return *this;
 
 
@@ -112,6 +117,7 @@ EuclideanVector& EuclideanVector::operator-=(const EuclideanVector &rhs)
         _array[i] -= rhs._array[i];
 
     }
+    _invalid_cache();
     return *this;
 }
 
@@ -122,6 +128,7 @@ EuclideanVector& EuclideanVector::operator*=(const double& rhs)
         _array[i] *= rhs;
 
     }
+    _invalid_cache();
     return *this;
 }
 
@@ -132,6 +139,7 @@ EuclideanVector& EuclideanVector::operator/=(const double& rhs)
         _array[i] /= rhs;
 
     }
+    _invalid_cache();
     return *this;
 }
 
@@ -229,12 +237,18 @@ EuclideanVector operator/(const EuclideanVector&lhs, double rhs)
 
 double EuclideanVector::getEuclideanNorm() const
 {
+    if (_cache_flag)
+    {
+        return _cache_norm;
+    }
     double result = 0;
     for (uint32_t i = 0; i < _dimension; ++ i)
     {
         result += _array[i] * _array[i];
     }
-    return ::sqrt(result);
+    _cache_flag = true;
+    _cache_norm = ::sqrt(result);
+    return _cache_norm;
 
 }
 
@@ -242,8 +256,6 @@ EuclideanVector EuclideanVector::createUnitVector() const
 {
     return EuclideanVector(*this) /= getEuclideanNorm();
 }
-
-
 
 void EuclideanVector::_free()
 {

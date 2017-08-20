@@ -77,6 +77,7 @@ class EuclideanVector
 
     private:
 
+        void _invalid_cache(){_cache_flag = false;}
         void _free();
         void _deep_copy(const EuclideanVector& v);
         void _shallow_copy(const EuclideanVector& v);
@@ -87,8 +88,8 @@ class EuclideanVector
         uint32_t _dimension{0};
         double*  _array{nullptr};
 
-        // double   _cache_norm{0};
-        // bool     _cache_flag{0};
+        mutable double   _cache_norm{0};
+        mutable bool     _cache_flag{false};
 };
 }
 

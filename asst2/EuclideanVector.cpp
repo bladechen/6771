@@ -269,8 +269,10 @@ void EuclideanVector::_free()
 
 void EuclideanVector::_shallow_copy(const EuclideanVector& v)
 {
+    assert(this != &v);
     if (this == &v)
     {
+        assert(0);
         return;
     }
     _free();
@@ -280,8 +282,10 @@ void EuclideanVector::_shallow_copy(const EuclideanVector& v)
 
 void EuclideanVector::_deep_copy(const EuclideanVector& v)
 {
+    assert(this != &v);
     if (this == &v)
     {
+        assert(0);
         return;
     }
     _free();

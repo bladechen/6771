@@ -41,8 +41,8 @@ namespace evec
             EuclideanVector& operator/=(const double& rhs);
 
             double& operator[](int index);
-            double  operator[](int index) const ;
-            operator std::vector<double>() const ;
+            double  operator[](int index) const;
+            operator std::vector<double>() const;
             operator std::list<double>() const;
 
             friend std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);

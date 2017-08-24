@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 struct AA{
     AA()
     {
@@ -44,5 +45,13 @@ int main() {
     std::cout << str1 << std::endl;
     std::cout << str2 << std::endl;
     std::cout << i << std::endl;
-    int aaa = static_cast<int>{5.3};
+    // int aaa = static_cast<int>{5.3};
+
+
+    constexpr auto size = 8;
+    constexpr auto value = 20;
+    std::vector<double> foo(size, value);// notice the braces, not the parent
+    std::cout << foo.size() << "\n";
+    // std::vector<int> (1, 9.0);
+    // o
 }

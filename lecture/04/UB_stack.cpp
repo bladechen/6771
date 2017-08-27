@@ -107,6 +107,28 @@ AA& test_AA()
 
 
 int main() {
+    A::X x;
+    X xx;
+    f(xx);
+    f(x);// SAME as A::f(x)
+    int i = 100;
+    ++ i = 99;
+    int j = ++ i;
+    // i ++ = 100;
+    std::string  str1 = "aa";
+    std::string  str2 = std::move(str1);
+    std::cout << str1 << std::endl;
+    std::cout << str2 << std::endl;
+    std::cout << i << std::endl;
+    // int aaa = static_cast<int>{5.3};
+
+
+    constexpr auto size = 8;
+    constexpr auto value = 20;
+    std::vector<double> foo(size, value);// notice the braces, not the parent
+    std::cout << foo.size() << "\n";
+    // std::vector<int> (1, 9.0);
+    // o
     // AA aa = AA();
     // std::vector<AA> vec;
     // vec.push_back(AA());

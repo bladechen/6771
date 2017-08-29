@@ -1,3 +1,9 @@
+// use assert instead of exception, because for the assignment, what happen an exception
+// caught(invalid input) but i can not do any thing with it but simply call exit(-1)?
+// therefore when asst spec tells me the error msg need to output, then it is the case
+// to use exception rather than assert.
+// refer to https://www.cse.unsw.edu.au/~cs6771/16s2/postscript/html/week06.html#Exceptions versus assertions
+//
 #include "EuclideanVector.h"
 
 namespace evec
@@ -62,10 +68,12 @@ namespace evec
     std::ostream& operator<<(std::ostream &os, const EuclideanVector &v)
     {
         os << "[";
-        for (auto i = 0U; i < v._dimension; ++ i)
+        for (auto i = 0U; i < v.getNumDimensions(); ++ i)
         {
-            if (i == 0) os << v[i];
-            else os << " " << v[i];
+            if (i == 0)
+                os << v[i];
+            else
+                os << " " << v[i];
         }
         os << "]";
         return os;
@@ -80,7 +88,7 @@ namespace evec
 
     double EuclideanVector::operator[](int index)  const
     {
-        assert(index < static_cast<int>(_dimension) && index >= 0);
+        assert(_valid_index(index));
         return _array[index];
     }
 
@@ -246,8 +254,11 @@ namespace evec
             _array = nullptr;
         }
         _dimension = 0;
+        _invalid_cache();
     }
 
+    // the caller of copy should make sure they are not the same.
+    // one function for one responsibility!
     void EuclideanVector::_shallow_copy(const EuclideanVector& v)
     {
         assert(this != &v);
@@ -272,6 +283,7 @@ namespace evec
     {
         v._dimension = 0;
         v._array = nullptr;
+        _invalid_cache();
     }
 
     bool EuclideanVector::_valid_index(int index) const

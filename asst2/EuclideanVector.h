@@ -23,7 +23,7 @@ namespace evec
             // use list/vector/etc. iterator to construct EuclideanVector
             template<typename Type> EuclideanVector(const Type& begin, const Type& end)
             {
-                const std::vector<double>& tmp = std::vector<double>(begin, end);
+                const auto& tmp = std::vector<double>(begin, end);
                 _array = new double[tmp.size()];
                 _dimension = tmp.size();
                 std::copy(tmp.begin(), tmp.end(), _array);
@@ -45,17 +45,11 @@ namespace evec
             operator std::vector<double>() const;
             operator std::list<double>() const;
 
-            friend std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);
-            friend bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs);
-            friend bool operator!=(const EuclideanVector& lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
-            friend double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator*(const EuclideanVector&lhs, double rhs);
-            friend EuclideanVector operator*(double lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator/(const EuclideanVector&lhs, double rhs);
 
-            uint32_t getNumDimensions() const {return _dimension;};
+            uint32_t getNumDimensions() const
+            {
+                return _dimension;
+            };
             double   get(uint32_t index) const
             {
                 assert(_valid_index(static_cast<int>(index)));
@@ -81,5 +75,15 @@ namespace evec
             mutable double   _cache_norm{0};
             mutable bool     _cache_flag{false};
     };
-}
 
+std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);
+bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs);
+bool operator!=(const EuclideanVector& lhs, const EuclideanVector& rhs);
+EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
+EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
+double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
+EuclideanVector operator*(const EuclideanVector&lhs, double rhs);
+EuclideanVector operator*(double lhs, const EuclideanVector& rhs);
+EuclideanVector operator/(const EuclideanVector&lhs, double rhs);
+
+}

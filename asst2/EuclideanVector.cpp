@@ -86,7 +86,7 @@ namespace evec
         return _array[index];
     }
 
-    double EuclideanVector::operator[](int index)  const
+    double EuclideanVector::operator[](int index) const
     {
         assert(_valid_index(index));
         return _array[index];
@@ -153,6 +153,22 @@ namespace evec
         return std::list<double>(_array, _array + _dimension);
     }
 
+    EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs)
+    {
+        assert(lhs.getNumDimensions() == rhs.getNumDimensions());
+        EuclideanVector ret(lhs);
+        ret += rhs;
+        return ret;
+    }
+
+    EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs)
+    {
+        assert(lhs.getNumDimensions() == rhs.getNumDimensions());
+        EuclideanVector ret(lhs);
+        ret -= rhs;
+        return ret;
+    }
+
     bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs)
     {
         if (lhs.getNumDimensions() != rhs.getNumDimensions())
@@ -174,22 +190,6 @@ namespace evec
     {
         return !(lhs == rhs);
     }
-    EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs)
-    {
-        assert(lhs.getNumDimensions() == rhs.getNumDimensions());
-        EuclideanVector ret(lhs);
-        ret += rhs;
-        return ret;
-    }
-
-    EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs)
-    {
-        assert(lhs.getNumDimensions() == rhs.getNumDimensions());
-        EuclideanVector ret(lhs);
-        ret -= rhs;
-        return ret;
-    }
-
     // dot-product multiplication.
     double operator*(const EuclideanVector& lhs, const EuclideanVector& rhs)
     {

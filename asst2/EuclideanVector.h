@@ -76,14 +76,14 @@ namespace evec
             mutable bool     _cache_flag{false};
     };
 
-std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);
-bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs);
-bool operator!=(const EuclideanVector& lhs, const EuclideanVector& rhs);
-EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
-EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
-double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
-EuclideanVector operator*(const EuclideanVector&lhs, double rhs);
-EuclideanVector operator*(double lhs, const EuclideanVector& rhs);
-EuclideanVector operator/(const EuclideanVector&lhs, double rhs);
+    std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);
+    bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs);
+    bool operator!=(const EuclideanVector& lhs, const EuclideanVector& rhs);
+    EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
+    EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
+    double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
+    EuclideanVector operator*(const EuclideanVector&lhs, double rhs);
+    EuclideanVector operator*(double lhs, const EuclideanVector& rhs);
+    EuclideanVector operator/(const EuclideanVector&lhs, double rhs);
 
 }

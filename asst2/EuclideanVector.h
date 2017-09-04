@@ -8,6 +8,8 @@
 #include <iterator>
 #include <list>
 #include <vector>
+
+// I make double pass by const reference, because double takes 12bytes to store in x86.
 namespace evec
 {
 
@@ -19,7 +21,7 @@ namespace evec
             EuclideanVector(const EuclideanVector &v);
             EuclideanVector(EuclideanVector &&v);
             EuclideanVector(uint32_t dimension);
-            EuclideanVector(uint32_t dimension, double value);
+            EuclideanVector(uint32_t dimension, const double& value);
             // use list/vector/etc. iterator to construct EuclideanVector
             template<typename Type> EuclideanVector(const Type& begin, const Type& end)
             {
@@ -82,8 +84,8 @@ namespace evec
     EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
     EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
     double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
-    EuclideanVector operator*(const EuclideanVector&lhs, double rhs);
-    EuclideanVector operator*(double lhs, const EuclideanVector& rhs);
-    EuclideanVector operator/(const EuclideanVector&lhs, double rhs);
+    EuclideanVector operator*(const EuclideanVector&lhs, const double& rhs);
+    EuclideanVector operator*(const double& lhs, const EuclideanVector& rhs);
+    EuclideanVector operator/(const EuclideanVector&lhs, const double& rhs);
 
 }

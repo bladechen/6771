@@ -25,7 +25,7 @@ namespace evec
 
     EuclideanVector::EuclideanVector(uint32_t dimension):EuclideanVector(dimension, 0.0){}
 
-    EuclideanVector::EuclideanVector(uint32_t dimension, double value)
+    EuclideanVector::EuclideanVector(uint32_t dimension, const double& value)
     {
         _array = new double[dimension];
         _dimension = dimension;
@@ -203,7 +203,7 @@ namespace evec
     }
 
     // perform scalar multiplication.
-    EuclideanVector operator*(const EuclideanVector&lhs, double rhs)
+    EuclideanVector operator*(const EuclideanVector&lhs, const double& rhs)
     {
         EuclideanVector ret(lhs);
         ret *= rhs;
@@ -211,14 +211,14 @@ namespace evec
     }
 
     // perform scalar multiplication.
-    EuclideanVector operator*(double lhs, const EuclideanVector& rhs)
+    EuclideanVector operator*(const double& lhs, const EuclideanVector& rhs)
     {
         EuclideanVector ret(rhs);
         ret *= lhs;
         return ret;
     }
 
-    EuclideanVector operator/(const EuclideanVector& lhs, double rhs)
+    EuclideanVector operator/(const EuclideanVector& lhs, const double& rhs)
     {
         EuclideanVector ret(lhs);
         ret /= rhs;

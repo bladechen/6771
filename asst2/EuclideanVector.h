@@ -23,12 +23,17 @@ namespace evec
             EuclideanVector(uint32_t dimension);
             EuclideanVector(uint32_t dimension, const double& value);
             // use list/vector/etc. iterator to construct EuclideanVector
-            template<typename Type> EuclideanVector(const Type& begin, const Type& end)
+            // template<typename Type> EuclideanVector(const Type::iterator & begin, const Type::iterator& end)
+            template< typename Iterator, typename U = typename std::iterator_traits<Iterator>::difference_type>
+            EuclideanVector(const Iterator& begin, const Iterator& end)
             {
-                const auto& tmp = std::vector<double>(begin, end);
-                _array = new double[tmp.size()];
-                _dimension = tmp.size();
-                std::copy(tmp.begin(), tmp.end(), _array);
+                _dimension = std::distance(begin, end);
+                _array = new double[_dimension];
+                std::copy(begin, end, _array);
+                // const auto& tmp = std::vector<double>(begin, end);
+                // _array = new double[tmp.size()];
+                // _dimension = tmp.size();
+                // std::copy(tmp.begin(), tmp.end(), _array);
             }
 
             EuclideanVector(const std::initializer_list<double>& value_list);

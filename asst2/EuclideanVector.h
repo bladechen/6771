@@ -8,6 +8,8 @@
 #include <iterator>
 #include <list>
 #include <vector>
+
+// I make double pass by const reference, because double takes 12bytes to store in x86.
 namespace evec
 {
 
@@ -19,14 +21,19 @@ namespace evec
             EuclideanVector(const EuclideanVector &v);
             EuclideanVector(EuclideanVector &&v);
             EuclideanVector(uint32_t dimension);
-            EuclideanVector(uint32_t dimension, double value);
+            EuclideanVector(uint32_t dimension, const double& value);
             // use list/vector/etc. iterator to construct EuclideanVector
-            template<typename Type> EuclideanVector(const Type& begin, const Type& end)
+            // template<typename Type> EuclideanVector(const Type::iterator & begin, const Type::iterator& end)
+            template< typename Iterator, typename U = typename std::iterator_traits<Iterator>::difference_type>
+            EuclideanVector(const Iterator& begin, const Iterator& end)
             {
-                const std::vector<double>& tmp = std::vector<double>(begin, end);
-                _array = new double[tmp.size()];
-                _dimension = tmp.size();
-                std::copy(tmp.begin(), tmp.end(), _array);
+                _dimension = std::distance(begin, end);
+                _array = new double[_dimension];
+                std::copy(begin, end, _array);
+                // const auto& tmp = std::vector<double>(begin, end);
+                // _array = new double[tmp.size()];
+                // _dimension = tmp.size();
+                // std::copy(tmp.begin(), tmp.end(), _array);
             }
 
             EuclideanVector(const std::initializer_list<double>& value_list);
@@ -45,17 +52,11 @@ namespace evec
             operator std::vector<double>() const;
             operator std::list<double>() const;
 
-            friend std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);
-            friend bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs);
-            friend bool operator!=(const EuclideanVector& lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
-            friend double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator*(const EuclideanVector&lhs, double rhs);
-            friend EuclideanVector operator*(double lhs, const EuclideanVector& rhs);
-            friend EuclideanVector operator/(const EuclideanVector&lhs, double rhs);
 
-            uint32_t getNumDimensions() const {return _dimension;};
+            uint32_t getNumDimensions() const
+            {
+                return _dimension;
+            };
             double   get(uint32_t index) const
             {
                 assert(_valid_index(static_cast<int>(index)));
@@ -81,5 +82,15 @@ namespace evec
             mutable double   _cache_norm{0};
             mutable bool     _cache_flag{false};
     };
-}
 
+    std::ostream& operator<<(std::ostream &os, const EuclideanVector &v);
+    bool operator==(const EuclideanVector& lhs, const EuclideanVector& rhs);
+    bool operator!=(const EuclideanVector& lhs, const EuclideanVector& rhs);
+    EuclideanVector operator+(const EuclideanVector&lhs, const EuclideanVector& rhs);
+    EuclideanVector operator-(const EuclideanVector&lhs, const EuclideanVector& rhs);
+    double operator*(const EuclideanVector&lhs, const EuclideanVector& rhs);
+    EuclideanVector operator*(const EuclideanVector&lhs, const double& rhs);
+    EuclideanVector operator*(const double& lhs, const EuclideanVector& rhs);
+    EuclideanVector operator/(const EuclideanVector&lhs, const double& rhs);
+
+}

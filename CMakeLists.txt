@@ -47,4 +47,5 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -g0 -DNDEBUG")
 
 add_subdirectory(lecture)
 add_subdirectory(asst1)
+add_subdirectory(asst3)
 # add_subdirectory(test)

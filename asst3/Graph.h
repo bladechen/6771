@@ -78,7 +78,7 @@ namespace gdwg
             class EdgeLessOperator
             {
                 public:
-                    bool operator () (const std::shared_ptr<Edge>& a, const std::shared_ptr<Edge>& b)
+                    bool operator () (const std::unique_ptr<Edge>& a, const std::unique_ptr<Edge>& b)
                     {
                         const auto& a_src_node = a->_src.lock();
                         const auto& a_dst_node = a->_dst.lock();
@@ -106,7 +106,7 @@ namespace gdwg
                     Node(const N& id);//:_id{id} {};
                     N _id;
                     // std::set<std::shared_ptr<Edge>, EdgeLessOperator> _in;
-                    std::set<std::shared_ptr<Edge>, EdgeLessOperator> _out;
+                    std::set<std::unique_ptr<Edge>, EdgeLessOperator> _out;
 
 
                     // bool is_in_edge(const N& src, const E& weight)
@@ -283,7 +283,7 @@ namespace gdwg
                                    std::shared_ptr<Node> dst_node,
                                    const E& weight)
     {
-        src_node->_out.insert(std::make_shared<Edge>(src_node, dst_node, weight));
+        src_node->_out.insert(std::make_unique<Edge>(src_node, dst_node, weight));
         // dst_node->_in.insert(std::make_shared<Edge>(src_node, dst_node, weight));
 
     }
@@ -396,12 +396,14 @@ namespace gdwg
                 {
                     continue;
                 }
-                dst->_out.insert(std::make_shared<Edge>(dst, node, (*i)->_weight));
+                _insert_edge(dst, node,  (*i)->_weight);
+                // dst->_out.insert(std::make_shared<Edge>(dst, node, (*i)->_weight));
             }
             else
             {
                 if (!(dst->is_out_edge(dst->_id,  (*i)->_weight)))
-                    dst->_out.insert(std::make_shared<Edge>(dst, dst, (*i)->_weight));
+                    _insert_edge(dst, dst,  (*i)->_weight);
+                    // dst->_out.insert(std::make_shared<Edge>(dst, dst, (*i)->_weight));
 
             }
         }
@@ -479,7 +481,7 @@ namespace gdwg
         assert(_is_same_id(src_node->_id , src));
         assert(_is_same_id(dst_node->_id , dst));
 
-        return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(), [&](const std::shared_ptr<Edge>& a) -> bool
+        return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(), [&](const std::unique_ptr<Edge>& a) -> bool
                          {
                             return (_is_same_id(a->_src.lock()->_id , src) && _is_same_id(a->_dst.lock()->_id, dst));
 
@@ -531,15 +533,13 @@ namespace gdwg
         std::vector<std::pair<N, E> > tmp;
         for (auto i = node->_out.cbegin(); i != node->_out.cend(); ++ i)
         {
-            auto edge = (*i);
-            tmp.push_back(std::make_pair(edge->_dst.lock()->_id, edge->_weight));
+            tmp.push_back(std::make_pair((*i)->_dst.lock()->_id,(*i)->_weight));
         }
 
         std::sort(tmp.begin(), tmp.end(),
                   [](const std::pair<N, E>& a, const std::pair<N, E>& b) ->bool
                   {
                         if (!_is_same_weight(a.second, b.second))
-                        // if (a.second != b.second)
                         {
                             return a.second < b.second;
                         }

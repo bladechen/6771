@@ -22,7 +22,6 @@ namespace gdwg
 
             Graph& operator=(const Graph& g);
             Graph& operator=(Graph&& g);
-            // virtual ~Graph(); XXX
 
             bool addNode(const N& val);
             bool addEdge(const N& src, const N& dst, const E& w);
@@ -42,25 +41,23 @@ namespace gdwg
             void next() const;
             const N& value() const;
 
-        // public:
         private:
 
-            static bool _is_same_id(const N& l, const N& r);
-
-            static bool _is_same_weight(const E& l, const E& r);
-            void _deep_copy(const Graph& g);
-
+            // void dump_edge_size() const;
             class Node;
             class Edge;
+    void dump_edge_size(const std::map<N, std::shared_ptr<Node>>& in) const;
 
+            static bool _is_same_id(const N& l, const N& r);
+            static bool _is_same_weight(const E& l, const E& r);
 
+            void _deep_copy(const Graph& g);
             void _insert_edge(std::shared_ptr<Node> src_node,
                               std::shared_ptr<Node> dst_node,
                               const E& weight);
 
             std::map<N, std::shared_ptr<Node> > _nodes_map;
             mutable typename std::map<N, std::shared_ptr<Node> >::const_iterator _it;
-
 
             class Edge
             {
@@ -78,7 +75,7 @@ namespace gdwg
             class EdgeLessOperator
             {
                 public:
-                    bool operator () (const std::unique_ptr<Edge>& a, const std::unique_ptr<Edge>& b)
+                    bool operator () (const std::shared_ptr<Edge>& a, const std::shared_ptr<Edge>& b)
                     {
                         const auto& a_src_node = a->_src.lock();
                         const auto& a_dst_node = a->_dst.lock();
@@ -103,24 +100,10 @@ namespace gdwg
             class Node
             {
                 public:
-                    Node(const N& id);//:_id{id} {};
+                    Node(const N& id);
                     N _id;
-                    // std::set<std::shared_ptr<Edge>, EdgeLessOperator> _in;
-                    std::set<std::unique_ptr<Edge>, EdgeLessOperator> _out;
+                    std::set<std::shared_ptr<Edge>, EdgeLessOperator> _out;
 
-
-                    // bool is_in_edge(const N& src, const E& weight)
-                    // {
-                    //     if (_in.find(std::make_shared<Edge>(std::make_shared<Node>(src),
-                    //                                         std::make_shared<Node>(_id),
-                    //                                         weight))
-                    //         != _in.end())
-                    //     {
-                    //         return true;
-                    //     }
-                    //     return false;
-                    //
-                    // }
                     bool is_out_edge(const N& dst, const E& weight) noexcept
                     {
                         for (auto i = _out.cbegin(); i != _out.cend(); ++ i)
@@ -148,7 +131,7 @@ namespace gdwg
                         for (auto i = _out.begin(); i != _out.end(); ++ i)
                         {
                             auto src_node = (*i)->_src.lock();
-                            auto  dst_node = (*i)->_dst.lock();
+                            auto dst_node = (*i)->_dst.lock();
 
                             assert(_is_same_id(src_node->_id , _id));
                             if (_is_same_id(dst_node->_id, dst) && _is_same_weight(weight, (*i)->_weight) )
@@ -158,13 +141,6 @@ namespace gdwg
                             }
                         }
                     }
-                        // if (!is_out_edge(dst, weight))
-                        // {
-                        //     return;
-                        // }
-                        //
-                        // _out.erase(std::make_shared<Edge>(std::make_shared<Node>(_id),
-
             };
 
             // Node
@@ -174,16 +150,45 @@ namespace gdwg
             }
 
 
-            // Edge
-            // friend
-
-
     };
+
+
+    template <typename T>
+    class ScopeGuard
+    {
+        public:
+            ScopeGuard(const T& t)
+            {
+                // std::cout <<"creating ScopeGuard\n";
+                _t = new T(t);
+                // std::cout <<"creating ok\n";
+                assert(_t != NULL);
+            }
+
+            virtual ~ScopeGuard()
+            {
+                if (_t != nullptr)
+                    delete _t;
+            }
+
+            T& revert()
+            {
+                T* tmp = _t;
+                _t = nullptr;
+                return *tmp;
+            }
+            T* get()
+            {
+                return _t;
+            }
+        private:
+            T *_t{nullptr};
+    };
+
+
 
     template<typename N, typename E>
     Graph<N, E>::Node::Node(const N& id):_id{id}{}
-
-
 
     template<typename N, typename E>
     Graph<N, E>::Graph()
@@ -211,31 +216,51 @@ namespace gdwg
          return ((!(l < r)) && (!(r < l)));
     }
 
-
-
     template<typename N, typename E>
     void Graph<N, E>::_deep_copy(const Graph<N, E>& g)
     {
-        for (auto i = g._nodes_map.begin(); i != g._nodes_map.end(); ++ i)
-        {
-            _nodes_map.insert(std::make_pair(i->first, std::make_shared<Graph<N, E>::Node>(i->first)));
-        }
-        for (auto i = g._nodes_map.begin(); i != g._nodes_map.end(); ++ i)
-        {
-            for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end(); ++ j)
+        // ScopeGuard<std::map<N, std::shared_ptr<Node>>> guard(_nodes_map);
+        // try
+        // {
+        // std::cout << "begin _deep_copy\n";
+            auto tmp = std::move(_nodes_map);
+            _nodes_map.clear();
+            try
             {
-                assert((*j)->_dst.lock());
-                assert(_nodes_map.find((*j)->_dst.lock()->_id) != _nodes_map.end());
-                _insert_edge(_nodes_map[i->first], _nodes_map[(*j)->_dst.lock()->_id], (*j)->_weight);
+                for (auto i = g._nodes_map.begin(); i != g._nodes_map.end(); ++ i)
+                {
+                    _nodes_map.insert(std::make_pair(i->first, std::make_shared<Graph<N, E>::Node>(i->first)));
+                }
+                for (auto i = g._nodes_map.begin(); i != g._nodes_map.end(); ++ i)
+                {
+                    for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end(); ++ j)
+                    {
+                        assert((*j)->_dst.lock());
+                        assert(_nodes_map.find((*j)->_dst.lock()->_id) != _nodes_map.end());
+                        _insert_edge(_nodes_map[i->first], _nodes_map[(*j)->_dst.lock()->_id], (*j)->_weight);
+                    }
+                }
             }
-        }
+            catch(...)
+            {
+                // std::cout << "err _deep_copy\n";
+                _nodes_map = std::move(tmp);
+                throw;
+            }
+        // }
+        // catch(...)
+        // {
+        //     // std::cout << "deep copy err\n";
+        //     _nodes_map.clear();
+        //     _nodes_map = std::move(guard.revert());
+        //     throw;
+        // }
 
     }
 
     template<typename N, typename E>
     Graph<N, E>::Graph(Graph<N, E>&& g)
     {
-        // _nodes_map = g._nodes_map;
         _nodes_map = std::move(g._nodes_map);
         g._nodes_map.clear();
     }
@@ -247,7 +272,7 @@ namespace gdwg
         {
             return *this;
         }
-        _nodes_map.clear();
+        // _nodes_map.clear();
         _deep_copy(g);
         return *this;
     }
@@ -261,7 +286,6 @@ namespace gdwg
         }
         _nodes_map.clear();
         _nodes_map = std::move(g._nodes_map);
-        // _nodes_map = g._nodes_map;
         g._nodes_map.clear();
         return *this;
     }
@@ -274,7 +298,6 @@ namespace gdwg
             return false;
         }
         assert(_nodes_map.insert(std::make_pair(val, std::make_shared<Graph<N, E>::Node>(val))).second);
-        // _nodes_map.insert(std::make_pair(val, std::make_shared<Graph<N, E>::Node>(val)));
         return true;
     }
 
@@ -283,9 +306,9 @@ namespace gdwg
                                    std::shared_ptr<Node> dst_node,
                                    const E& weight)
     {
-        src_node->_out.insert(std::make_unique<Edge>(src_node, dst_node, weight));
-        // dst_node->_in.insert(std::make_shared<Edge>(src_node, dst_node, weight));
-
+        src_node->_out.insert(std::make_shared<Edge>(src_node, dst_node, weight));
+        std::cout << "_insert edge " << *(src_node->_id.value) << " to " << (*dst_node->_id.value)
+             << " weight: " << *(weight.value)<< "\n";
     }
 
     template<typename N, typename E>
@@ -297,17 +320,15 @@ namespace gdwg
         }
         assert(_nodes_map.find(src) != _nodes_map.end());
         assert(_nodes_map.find(dst) != _nodes_map.end());
-        auto src_node = _nodes_map[src]; //FIXME
-        auto dst_node = _nodes_map[dst];
+        auto& src_node = _nodes_map[src]; //FIXME
+        auto& dst_node = _nodes_map[dst];
         assert(_is_same_id(src_node->_id , src));
         assert(_is_same_id(dst_node->_id , dst));
 
         if (src_node->is_out_edge(dst, w))
         {
-            // assert(dst_node->is_in_edge(src, w));
             return false;
         }
-        // assert(!dst_node->is_in_edge(src, w));
         _insert_edge(src_node, dst_node, w);
         return true;
     }
@@ -328,15 +349,35 @@ namespace gdwg
             return true;
         }
         assert(_nodes_map.find(newData) == _nodes_map.end());
-        _nodes_map[newData] = _nodes_map[oldData];
-        _nodes_map[newData]->_id = newData;
-        _nodes_map.erase(oldData);
-        // assert(_nodes_map.insert(std::make_pair(val, std::move(_nodes_map[oldData]))).second);
 
-        // _nodes_map.insert(std::make_pair(newData, std::move(_nodes_map[oldData])));
-        // _nodes_map[newData]->_id = newData;
-        // _nodes_map.erase(oldData);
+        ScopeGuard<Graph> guard(*this);
+        try
+        {
+            _nodes_map[newData] = _nodes_map[oldData];
+            _nodes_map[newData]->_id = newData;
+            _nodes_map.erase(oldData);
+        }
+        catch (...)
+        {
+            std::swap(*this, guard.revert());
+            // std::cout << "replace err\n";
+            // _nodes_map.clear();
+            // _nodes_map = std::move(guard.revert());
+            throw;
+        }
+
         return true;
+    }
+    template<typename N, typename E>
+    void Graph<N, E>::dump_edge_size(const std::map<N, std::shared_ptr<Node>>& in) const
+    {
+        int count = 0;
+        for (auto i =in.cbegin(); i != in.cend(); ++i)
+        {
+            count += i->second->_out.size();
+        }
+        std::cout << "edge count: " << count << std::endl;
+
     }
 
     template<typename N, typename E>
@@ -351,64 +392,86 @@ namespace gdwg
         {
             return;
         }
-        auto src = _nodes_map[oldData];
-        auto dst = _nodes_map[newData];
-
-        for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
+        // std::cout << "creating gaeud\n" ;
+        // dump_edge_size(_nodes_map);
+        // ScopeGuard<std::map<N, std::shared_ptr<Node>>> guard(*this);
+        ScopeGuard<Graph> guard(*this);
+        // ScopeGuard<std::map<N, std::shared_ptr<Node>>> guard(_nodes_map);
+        dump_edge_size(_nodes_map);
+        // dump_edge_size(*(guard.get()));
+        // dump_edge_size(_nodes_map);
+        // dump_edge_size(*(guard.get()));
+        try
         {
-            // from node not the deleted node
-            if (!_is_same_id(i->second->_id ,oldData))
+            auto& src = _nodes_map[oldData];
+            auto& dst = _nodes_map[newData];
+            for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
             {
-                std::vector<E> tmp;
-                for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end();)
+                // from node not the deleted node
+                if (!_is_same_id(i->second->_id ,oldData))
                 {
-                    auto dst_node = (*j)->_dst.lock(); //out node
-                    assert(dst_node);
-                    if (_is_same_id(dst_node->_id,  oldData ))
+                    std::vector<E> tmp;
+                    for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end();)
                     {
-                        tmp.push_back((*j)->_weight);
-                        j = (i->second)->_out.erase(j);
-                        // remove edge to the deleted node
+                        auto dst_node = (*j)->_dst.lock(); //out node
+                        assert(dst_node);
+                        if (_is_same_id(dst_node->_id,  oldData))
+                        {
+                            tmp.push_back((*j)->_weight);
+                            j = (i->second)->_out.erase(j);
+                            // remove edge to the deleted node
+                        }
+                        else
+                        {
+                            ++ j;
+                        }
                     }
-                    else
+                    // std::cout << *(i->second->_id.value) << std::endl;
+                    // dump_edge_size(*(guard.get()));
+                    for (auto j = tmp.begin(); j != tmp.end(); ++ j)
                     {
-                        ++ j;
-                    }
-                }
-                for (auto j = tmp.begin(); j != tmp.end(); ++ j)
-                {
-                    if (!((i->second)->is_out_edge(newData, *j)))
-                    {
-                        _insert_edge(i->second, dst, *j);
+                        if (!((i->second)->is_out_edge(newData, *j)))
+                        {
+                            _insert_edge(i->second, dst, *j);
+                        }
                     }
                 }
             }
-        }
+            // std::cout << "middle " << std::endl;
 
-        for (auto i = src->_out.cbegin(); i != src->_out.cend(); ++ i)
+            for (auto i = src->_out.cbegin(); i != src->_out.cend(); ++ i)
+            {
+                auto node = (*i)->_dst.lock();
+                assert(node);
+                assert(_is_same_id((*i)->_src.lock()->_id , oldData));
+                if (!_is_same_id(node->_id , oldData))
+                {
+                    if (dst->is_out_edge(node->_id, (*i)->_weight))
+                    {
+                        continue;
+                    }
+                    _insert_edge(dst, node,  (*i)->_weight);
+                }
+                else
+                {
+                    if (!(dst->is_out_edge(dst->_id,  (*i)->_weight)))
+                        _insert_edge(dst, dst,  (*i)->_weight);
+
+                }
+            }
+            _nodes_map.erase(oldData);
+        }
+        catch(...)
         {
-            auto node = (*i)->_dst.lock();
-            assert(node);
-            assert(_is_same_id((*i)->_src.lock()->_id , oldData));
-            if (!_is_same_id(node->_id , oldData))
-            {
-                if (dst->is_out_edge(node->_id, (*i)->_weight))
-                {
-                    continue;
-                }
-                _insert_edge(dst, node,  (*i)->_weight);
-                // dst->_out.insert(std::make_shared<Edge>(dst, node, (*i)->_weight));
-            }
-            else
-            {
-                if (!(dst->is_out_edge(dst->_id,  (*i)->_weight)))
-                    _insert_edge(dst, dst,  (*i)->_weight);
-                    // dst->_out.insert(std::make_shared<Edge>(dst, dst, (*i)->_weight));
-
-            }
+            std::cout << "merge err\n";
+            // dump_edge_size(*guard.get());
+            _nodes_map.clear();
+            // dump_edge_size(*guard.get());
+            std::swap(*this, guard.revert());
+            // _nodes_map = std::move(guard.revert());
+            // dump_edge_size(_nodes_map);
+            throw;
         }
-
-        _nodes_map.erase(oldData);
     }
 
     template<typename N, typename E>
@@ -418,27 +481,33 @@ namespace gdwg
         {
             return;
         }
-        for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
+        try
         {
-            if (!_is_same_id(i->second->_id , src))
+            for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
             {
-
-                std::vector<E> tmp;
-                for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end();)
+                if (!_is_same_id(i->second->_id , src))
                 {
-                    auto dst_node = (*j)->_dst.lock(); //out node
-                    if (_is_same_id(dst_node->_id, src))
+                    std::vector<E> tmp;
+                    for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end();)
                     {
-                        j = (i->second)->_out.erase(j);
-                    }
-                    else
-                    {
-                        ++ j;
+                        auto dst_node = (*j)->_dst.lock(); //out node
+                        if (_is_same_id(dst_node->_id, src))
+                        {
+                            j = (i->second)->_out.erase(j);
+                        }
+                        else
+                        {
+                            ++ j;
+                        }
                     }
                 }
             }
+            _nodes_map.erase(src);
         }
-        _nodes_map.erase(src);
+        catch(...)
+        {
+            // std::cout << "delete node err\n";
+        }
     }
 
     template<typename N, typename E>
@@ -448,12 +517,18 @@ namespace gdwg
         {
             return;
         }
-        auto src_node = _nodes_map[src]; //FIXME
-        auto dst_node = _nodes_map[dst];
-        assert(_is_same_id(src_node->_id, src));
-        assert(_is_same_id(dst_node->_id, dst));
-        src_node->delete_edge(dst, w);
-
+        try
+        {
+            auto& src_node = _nodes_map[src]; //FIXME
+            auto& dst_node = _nodes_map[dst];
+            assert(_is_same_id(src_node->_id, src));
+            assert(_is_same_id(dst_node->_id, dst));
+            src_node->delete_edge(dst, w);
+        }
+        catch(...)
+        {
+            // std::cout << "deleteEdge err\n";
+        }
     }
 
     template<typename N, typename E>
@@ -481,7 +556,7 @@ namespace gdwg
         assert(_is_same_id(src_node->_id , src));
         assert(_is_same_id(dst_node->_id , dst));
 
-        return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(), [&](const std::unique_ptr<Edge>& a) -> bool
+        return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(), [&](const std::shared_ptr<Edge>& a) -> bool
                          {
                             return (_is_same_id(a->_src.lock()->_id , src) && _is_same_id(a->_dst.lock()->_id, dst));
 
@@ -522,35 +597,45 @@ namespace gdwg
         {
             throw std::runtime_error("no thing to printEdges");
         }
-        os << "Edges attached to Node " << val << std::endl;// XXX overload ostream<<?
-        auto node = _nodes_map.find(val)->second;
-        if (node->_out.size() == 0)
-        {
-            os << "(null)" << std::endl;
-            return;
-        }
+        // try
+        // {
+            os << "Edges attached to Node " << val << std::endl;// XXX overload ostream<<?
+            auto& node = _nodes_map.find(val)->second;
+            // std::cout << "Edges attached to Node " << *(val.value)  << " size:" << node->_out.size()<< std::endl;// XXX overload ostream<<?
+            if (node->_out.size() == 0)
+            {
+                os << "(null)" << std::endl;
+                return;
+            }
 
-        std::vector<std::pair<N, E> > tmp;
-        for (auto i = node->_out.cbegin(); i != node->_out.cend(); ++ i)
-        {
-            tmp.push_back(std::make_pair((*i)->_dst.lock()->_id,(*i)->_weight));
-        }
 
-        std::sort(tmp.begin(), tmp.end(),
-                  [](const std::pair<N, E>& a, const std::pair<N, E>& b) ->bool
-                  {
-                        if (!_is_same_weight(a.second, b.second))
-                        {
-                            return a.second < b.second;
-                        }
-                        return a.first < b .first;
-                  }
-                  );
-        for (auto i = tmp.cbegin(); i != tmp.cend(); ++ i)
-        {
-            os << i->first << " " << i->second << std::endl;
-            // std::cout << i->first << " " << i->second << std::endl;
-        }
+            std::vector<std::pair<N, E> > tmp;
+            for (auto i = node->_out.cbegin(); i != node->_out.cend(); ++ i)
+            {
+                tmp.push_back(std::make_pair((*i)->_dst.lock()->_id,(*i)->_weight));
+            }
+
+            std::sort(tmp.begin(), tmp.end(),
+                      [](const std::pair<N, E>& a, const std::pair<N, E>& b) ->bool
+                      {
+                      if (!_is_same_weight(a.second, b.second))
+                      {
+                      return a.second < b.second;
+                      }
+                      return a.first < b .first;
+                      }
+                     );
+            for (auto i = tmp.cbegin(); i != tmp.cend(); ++ i)
+            {
+                os << i->first << " " << i->second << std::endl;
+                // std::cout << i->first << " " << i->second << std::endl;
+            }
+        // }
+        // catch(...)
+        // {
+        //     std::cout << "fuck print edge\n";
+        //     throw;
+        // }
 
     }
 
@@ -580,16 +665,4 @@ namespace gdwg
         return (_it->first);
 
     }
-
-
-    // template<typename N, typename E>
-    // void Graph<N, E>::fuck()
-    // {
-    //      Node a(10);
-    //      Node b (100);
-    //
-    //     std::cout << (a < b) << std::endl;
-    // }
-    // template implementation
-    // #include "Graph_tem.h"
 }

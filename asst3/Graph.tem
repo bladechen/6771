@@ -1,3 +1,4 @@
+// used in the stack usually, after leaving its scope, it will destroy the pointer
 template <typename T>
 class ScopeGuard
 {
@@ -19,7 +20,7 @@ Graph<N, E>::Node::Node(const N& id):_id{id}{}
 template<typename N, typename E>
 bool Graph<N, E>::Node::is_out_edge(const N& dst, const E& weight) // will alloc mem, should be not called by noexcept function
 {
-    return _out.find(std::make_unique<Edge>(std::make_shared<Node>(_id),
+    return _out.find(std::make_unique<Edge>(
                                             std::make_shared<Node>(dst),
                                             weight)) != _out.end();
 }
@@ -29,10 +30,8 @@ void Graph<N, E>::Node::delete_edge(const N& dst, const E& weight) noexcept
 {
     for (auto i = _out.begin(); i != _out.end(); ++ i)
     {
-        auto src_node = (*i)->_src.lock();
         auto dst_node = (*i)->_dst.lock();
 
-        assert(_is_same_id(src_node->_id , _id));
         if (_is_same_id(dst_node->_id, dst) && _is_same_weight(weight, (*i)->_weight) )
         {
             _out.erase(i);
@@ -42,8 +41,8 @@ void Graph<N, E>::Node::delete_edge(const N& dst, const E& weight) noexcept
 }
 
 template<typename N, typename E>
-Graph<N, E>::Edge::Edge(const std::shared_ptr<Node>& src, const std::shared_ptr<Node>& dst, const E& weight)
-    :_src(src), _dst(dst), _weight(weight){}
+Graph<N, E>::Edge::Edge(const std::shared_ptr<Node>& dst, const E& weight)
+    :_dst(dst), _weight(weight){}
 
 template<typename N, typename E>
 bool Graph<N, E>::_is_same_id(const N& l, const N& r)
@@ -141,7 +140,7 @@ void Graph<N, E>::_insert_edge(std::shared_ptr<Node> src_node,
                                std::shared_ptr<Node> dst_node,
                                const E& weight)
 {
-    src_node->_out.insert(std::make_unique<Edge>(src_node, dst_node, weight));
+    src_node->_out.insert(std::make_unique<Edge>(dst_node, weight));
 }
 
 template<typename N, typename E>
@@ -249,7 +248,7 @@ void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
         {
             auto node = (*i)->_dst.lock();
             assert(node);
-            assert(_is_same_id((*i)->_src.lock()->_id , oldData));
+            // assert(_is_same_id((*i)->_src.lock()->_id , oldData));
             if (!_is_same_id(node->_id , oldData))
             {
                 if (dst->is_out_edge(node->_id, (*i)->_weight))
@@ -344,7 +343,7 @@ bool Graph<N, E>::isConnected(const N& src, const N& dst) const
 
     return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(), [&](const std::unique_ptr<Edge>& a) -> bool
                         {
-                            return (_is_same_id(a->_src.lock()->_id , src) && _is_same_id(a->_dst.lock()->_id, dst));
+                            return (_is_same_id(a->_dst.lock()->_id, dst));
 
                         }) !=  src_node->_out.cend();
 }

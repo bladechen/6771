@@ -60,8 +60,7 @@ namespace gdwg
                 class Edge
                 {
                     public:
-                        Edge(const std::shared_ptr<Node>& src, const std::shared_ptr<Node>& dst, const E& weight);
-                        std::weak_ptr<Node> _src;
+                        Edge(const std::shared_ptr<Node>& dst, const E& weight);
                         std::weak_ptr<Node> _dst;
                         E _weight;
                 };
@@ -71,18 +70,10 @@ namespace gdwg
                     public:
                         bool operator () (const std::unique_ptr<Edge>& a, const std::unique_ptr<Edge>& b)
                         {
-                            const auto& a_src_node = a->_src.lock();
                             const auto& a_dst_node = a->_dst.lock();
-                            const auto& b_src_node = b->_src.lock();
                             const auto& b_dst_node = b->_dst.lock();
-                            assert(a_src_node != nullptr);
                             assert(a_dst_node!= nullptr);
-                            assert(b_src_node != nullptr);
                             assert(b_dst_node != nullptr);
-                            if (!_is_same_id(a_src_node->_id , b_src_node->_id))
-                            {
-                                return a_src_node->_id < b_src_node->_id;
-                            }
                             if (!_is_same_id(a_dst_node->_id , b_dst_node->_id))
                             {
                                 return a_dst_node->_id < b_dst_node->_id;

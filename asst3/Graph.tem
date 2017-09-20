@@ -28,10 +28,11 @@ bool Graph<N, E>::Node::is_out_edge(const N& dst, const E& weight)
 template<typename N, typename E>
 void Graph<N, E>::Node::delete_edge(const N& dst, const E& weight) noexcept
 {
-    for (auto i = _out.begin(); i != _out.end(); ++ i)
+    for (auto i = _out.cbegin(); i != _out.cend(); ++ i)
     {
-        auto dst_node = (*i)->_dst.lock();
-        if (_is_same_id(dst_node->_id, dst) && _is_same_weight(weight, (*i)->_weight))
+        const auto& dst_node = (*i)->_dst.lock();
+        if (_is_same_id(dst_node->_id, dst) &&
+            _is_same_weight(weight, (*i)->_weight))
         {
             _out.erase(i);
             return;
@@ -158,8 +159,8 @@ bool Graph<N, E>::addEdge(const N& src,
     }
     assert(_nodes_map.find(src) != _nodes_map.end());
     assert(_nodes_map.find(dst) != _nodes_map.end());
-    auto& src_node = _nodes_map[src];
-    auto& dst_node = _nodes_map[dst];
+    const auto& src_node = _nodes_map[src];
+    const auto& dst_node = _nodes_map[dst];
     assert(_is_same_id(src_node->_id , src));
     assert(_is_same_id(dst_node->_id , dst));
 
@@ -217,9 +218,8 @@ void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
     ScopeGuard<Graph> guard(*this);
     try
     {
-        auto& src = _nodes_map[oldData];
-        auto& dst = _nodes_map[newData];
-
+        const auto& src = _nodes_map[oldData];
+        const auto& dst = _nodes_map[newData];
         // first step is to move the edge who's src node is not the old node
         // and its dst node is the old node,
         // change its dst node to new node.
@@ -229,9 +229,9 @@ void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
             if (!_is_same_id(i.second->_id, oldData))
             {
                 std::vector<E> tmp;
-                for (auto j = (i.second)->_out.begin(); j != (i.second)->_out.end();)
+                for (auto j = (i.second)->_out.cbegin(); j != (i.second)->_out.cend();)
                 {
-                    auto dst_node = (*j)->_dst.lock();
+                    const auto& dst_node = (*j)->_dst.lock();
                     assert(dst_node);
                     if (_is_same_id(dst_node->_id, oldData))
                     {
@@ -258,7 +258,7 @@ void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
         // otherwise, only change src to new node
         for (const auto& i : src->_out)
         {
-            auto node = i->_dst.lock();
+            const auto& node = i->_dst.lock();
             assert(node);
             if (!_is_same_id(node->_id , oldData))
             {
@@ -296,9 +296,9 @@ void Graph<N, E>::deleteNode(const N& src) noexcept
         if (!_is_same_id(i.second->_id , src))
         {
             std::vector<E> tmp;
-            for (auto j = (i.second)->_out.begin(); j != (i.second)->_out.end();)
+            for (auto j = (i.second)->_out.cbegin(); j != (i.second)->_out.cend();)
             {
-                auto dst_node = (*j)->_dst.lock();
+                const auto& dst_node = (*j)->_dst.lock();
                 if (_is_same_id(dst_node->_id, src))
                 {
                     j = (i.second)->_out.erase(j);
@@ -323,8 +323,8 @@ void Graph<N, E>::deleteEdge(const N& src,
     {
         return;
     }
-    auto& src_node = _nodes_map[src];
-    auto& dst_node = _nodes_map[dst];
+    const auto& src_node = _nodes_map[src];
+    const auto& dst_node = _nodes_map[dst];
     assert(_is_same_id(src_node->_id, src));
     assert(_is_same_id(dst_node->_id, dst));
     src_node->delete_edge(dst, w);
@@ -350,8 +350,8 @@ bool Graph<N, E>::isConnected(const N& src, const N& dst) const
     {
         throw std::runtime_error("either src or dst is not in the graph while calling isConnected");
     }
-    auto& src_node = _nodes_map.find(src)->second;
-    auto& dst_node = _nodes_map.find(dst)->second;
+    const auto& src_node = _nodes_map.find(src)->second;
+    const auto& dst_node = _nodes_map.find(dst)->second;
     assert(_is_same_id(src_node->_id , src));
     assert(_is_same_id(dst_node->_id , dst));
 
@@ -397,7 +397,7 @@ void Graph<N, E>::printEdges(const N& val, std::ostream& os) const
         throw std::runtime_error("no thing to printEdges");
     }
     os << "Edges attached to Node " << val << std::endl;
-    auto& node = _nodes_map.find(val)->second;
+    const auto& node = _nodes_map.find(val)->second;
     if (node->_out.size() == 0)
     {
         os << "(null)" << std::endl;
@@ -447,5 +447,5 @@ void Graph<N, E>::next() const
 template<typename N, typename E>
 const N& Graph<N, E>::value() const
 {
-    return (_it->first);
+    return _it->first;
 }

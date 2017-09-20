@@ -31,23 +31,26 @@ namespace gdwg
                 void deleteNode(const N&) noexcept;
                 void deleteEdge(const N& src, const N& dst, const E& w) noexcept;
                 void clear() noexcept;
+
                 bool isNode(const N& val) const;
                 bool isConnected(const N& src, const N& dst) const;
-                void printNodes(std::ostream& os = std::cout) const;
-                void printEdges(const N& val, std::ostream& os=std::cout) const;
 
+                // make std::ostream& for fuzzier test.
+                void printNodes(std::ostream& os = std::cout) const;
+                void printEdges(const N& val, std::ostream& os = std::cout) const;
+
+                // simulate iterator
                 void begin() const;
                 bool end() const;
                 void next() const;
                 const N& value() const;
 
             private:
-
                 class Node;
                 class Edge;
 
-                std::map<N, std::shared_ptr<Node> > _nodes_map;
-                mutable typename std::map<N, std::shared_ptr<Node> >::const_iterator _it;
+                std::map<N, std::shared_ptr<Node>> _nodes_map; // store all the Node in this map
+                mutable typename std::map<N, std::shared_ptr<Node>>::const_iterator _it;
 
                 static bool _is_same_id(const N& l, const N& r);
                 static bool _is_same_weight(const E& l, const E& r);
@@ -61,7 +64,7 @@ namespace gdwg
                 {
                     public:
                         Edge(const std::shared_ptr<Node>& dst, const E& weight);
-                        std::weak_ptr<Node> _dst;
+                        std::weak_ptr<Node> _dst;  // refer to the node in the _nodes_map
                         E _weight;
                 };
 
@@ -72,7 +75,7 @@ namespace gdwg
                         {
                             const auto& a_dst_node = a->_dst.lock();
                             const auto& b_dst_node = b->_dst.lock();
-                            assert(a_dst_node!= nullptr);
+                            assert(a_dst_node != nullptr);
                             assert(b_dst_node != nullptr);
                             if (!_is_same_id(a_dst_node->_id , b_dst_node->_id))
                             {
@@ -94,5 +97,5 @@ namespace gdwg
 
                 };
         };
-#include "Graph.tem"
+        #include "Graph.tem"
 }

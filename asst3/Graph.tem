@@ -17,11 +17,11 @@ class ScopeGuard
 template<typename N, typename E>
 Graph<N, E>::Node::Node(const N& id):_id{id}{}
 
+// will alloc mem, should be not called by noexcept function
 template<typename N, typename E>
-bool Graph<N, E>::Node::is_out_edge(const N& dst, const E& weight) // will alloc mem, should be not called by noexcept function
+bool Graph<N, E>::Node::is_out_edge(const N& dst, const E& weight)
 {
-    return _out.find(std::make_unique<Edge>(
-                                            std::make_shared<Node>(dst),
+    return _out.find(std::make_unique<Edge>(std::make_shared<Node>(dst),
                                             weight)) != _out.end();
 }
 
@@ -31,8 +31,7 @@ void Graph<N, E>::Node::delete_edge(const N& dst, const E& weight) noexcept
     for (auto i = _out.begin(); i != _out.end(); ++ i)
     {
         auto dst_node = (*i)->_dst.lock();
-
-        if (_is_same_id(dst_node->_id, dst) && _is_same_weight(weight, (*i)->_weight) )
+        if (_is_same_id(dst_node->_id, dst) && _is_same_weight(weight, (*i)->_weight))
         {
             _out.erase(i);
             return;
@@ -44,6 +43,7 @@ template<typename N, typename E>
 Graph<N, E>::Edge::Edge(const std::shared_ptr<Node>& dst, const E& weight)
     :_dst(dst), _weight(weight){}
 
+// spec only tells N/E will overload operator <
 template<typename N, typename E>
 bool Graph<N, E>::_is_same_id(const N& l, const N& r)
 {
@@ -63,17 +63,20 @@ void Graph<N, E>::_deep_copy(const Graph<N, E>& g)
     _nodes_map.clear();
     try
     {
-        for (auto i = g._nodes_map.begin(); i != g._nodes_map.end(); ++ i)
+        // firstly copy all the node from the previous graph
+        for (const auto& i : g._nodes_map)
         {
-            _nodes_map.insert(std::make_pair(i->first, std::make_shared<Graph<N, E>::Node>(i->first)));
+            _nodes_map.insert(std::make_pair(i.first, std::make_shared<Graph<N, E>::Node>(i.first)));
         }
-        for (auto i = g._nodes_map.begin(); i != g._nodes_map.end(); ++ i)
+
+        // go though all the node to copy the edge from the previous graph
+        for (const auto& i : g._nodes_map)
         {
-            for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end(); ++ j)
+            for (const auto& j : (i.second)->_out)
             {
-                assert((*j)->_dst.lock());
-                assert(_nodes_map.find((*j)->_dst.lock()->_id) != _nodes_map.end());
-                _insert_edge(_nodes_map[i->first], _nodes_map[(*j)->_dst.lock()->_id], (*j)->_weight);
+                assert(j->_dst.lock());
+                assert(_nodes_map.find(j->_dst.lock()->_id) != _nodes_map.end());
+                _insert_edge(_nodes_map[i.first], _nodes_map[j->_dst.lock()->_id], j->_weight);
             }
         }
     }
@@ -112,7 +115,7 @@ Graph<N, E>& Graph<N, E>::operator=(const Graph<N, E>& g)
 }
 
 template<typename N, typename E>
-Graph<N, E> & Graph<N, E>::operator=(Graph<N, E>&& g)
+Graph<N, E>& Graph<N, E>::operator=(Graph<N, E>&& g)
 {
     if (this == &g)
     {
@@ -144,9 +147,12 @@ void Graph<N, E>::_insert_edge(std::shared_ptr<Node> src_node,
 }
 
 template<typename N, typename E>
-bool Graph<N, E>::addEdge(const N& src, const N& dst, const E& w)
+bool Graph<N, E>::addEdge(const N& src,
+                          const N& dst,
+                          const E& w)
 {
-    if (_nodes_map.find(src) == _nodes_map.end() || _nodes_map.find(dst) == _nodes_map.end())
+    if (_nodes_map.find(src) == _nodes_map.end() ||
+        _nodes_map.find(dst) == _nodes_map.end())
     {
         throw std::runtime_error("either src or dst is not in the graph");
     }
@@ -172,6 +178,7 @@ bool Graph<N, E>::replace(const N& oldData, const N& newData)
     {
         throw std::runtime_error("not find old Data in replace");
     }
+    // new node already in the graph, do nothing
     if (_nodes_map.find(newData) != _nodes_map.end())
     {
         return false;
@@ -192,18 +199,17 @@ bool Graph<N, E>::replace(const N& oldData, const N& newData)
         std::swap(*this, guard.revert());
         throw;
     }
-
     return true;
 }
 
 template<typename N, typename E>
 void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
 {
-    if (_nodes_map.find(oldData) == _nodes_map.end() || _nodes_map.find(newData) == _nodes_map.end())
+    if (_nodes_map.find(oldData) == _nodes_map.end() ||
+        _nodes_map.find(newData) == _nodes_map.end())
     {
         throw std::runtime_error("not find Data in mergeReplace");
     }
-
     if (_is_same_id(oldData, newData))
     {
         return;
@@ -213,20 +219,24 @@ void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
     {
         auto& src = _nodes_map[oldData];
         auto& dst = _nodes_map[newData];
-        for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
+
+        // first step is to move the edge who's src node is not the old node
+        // and its dst node is the old node,
+        // change its dst node to new node.
+        // keep the for format same as inner for loop, so using iterator instead of range based
+        for (const auto& i : _nodes_map)
         {
-            // from node not the deleted node
-            if (!_is_same_id(i->second->_id ,oldData))
+            if (!_is_same_id(i.second->_id, oldData))
             {
                 std::vector<E> tmp;
-                for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end();)
+                for (auto j = (i.second)->_out.begin(); j != (i.second)->_out.end();)
                 {
-                    auto dst_node = (*j)->_dst.lock(); //out node
+                    auto dst_node = (*j)->_dst.lock();
                     assert(dst_node);
-                    if (_is_same_id(dst_node->_id,  oldData))
+                    if (_is_same_id(dst_node->_id, oldData))
                     {
                         tmp.push_back((*j)->_weight);
-                        j = (i->second)->_out.erase(j);
+                        j = (i.second)->_out.erase(j);
                         // remove edge to the deleted node
                     }
                     else
@@ -234,34 +244,34 @@ void Graph<N, E>::mergeReplace(const N& oldData, const N& newData)
                         ++ j;
                     }
                 }
-                for (auto j = tmp.begin(); j != tmp.end(); ++ j)
+                for (const auto& j : tmp)
                 {
-                    if (!((i->second)->is_out_edge(newData, *j)))
+                    if (!((i.second)->is_out_edge(newData, j)))
                     {
-                        _insert_edge(i->second, dst, *j);
+                        _insert_edge(i.second, dst, j);
                     }
                 }
             }
         }
 
-        for (auto i = src->_out.cbegin(); i != src->_out.cend(); ++ i)
+        // deal with old node, if it point to itself, chaning its src/dst to new node
+        // otherwise, only change src to new node
+        for (const auto& i : src->_out)
         {
-            auto node = (*i)->_dst.lock();
+            auto node = i->_dst.lock();
             assert(node);
-            // assert(_is_same_id((*i)->_src.lock()->_id , oldData));
             if (!_is_same_id(node->_id , oldData))
             {
-                if (dst->is_out_edge(node->_id, (*i)->_weight))
+                if (dst->is_out_edge(node->_id, i->_weight))
                 {
                     continue;
                 }
-                _insert_edge(dst, node,  (*i)->_weight);
+                _insert_edge(dst, node,  i->_weight);
             }
             else
             {
-                if (!(dst->is_out_edge(dst->_id,  (*i)->_weight)))
-                    _insert_edge(dst, dst,  (*i)->_weight);
-
+                if (!(dst->is_out_edge(dst->_id,  i->_weight)))
+                    _insert_edge(dst, dst,  i->_weight);
             }
         }
         _nodes_map.erase(oldData);
@@ -281,17 +291,17 @@ void Graph<N, E>::deleteNode(const N& src) noexcept
     {
         return;
     }
-    for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
+    for (const auto& i : _nodes_map)
     {
-        if (!_is_same_id(i->second->_id , src))
+        if (!_is_same_id(i.second->_id , src))
         {
             std::vector<E> tmp;
-            for (auto j = (i->second)->_out.begin(); j != (i->second)->_out.end();)
+            for (auto j = (i.second)->_out.begin(); j != (i.second)->_out.end();)
             {
-                auto dst_node = (*j)->_dst.lock(); //out node
+                auto dst_node = (*j)->_dst.lock();
                 if (_is_same_id(dst_node->_id, src))
                 {
-                    j = (i->second)->_out.erase(j);
+                    j = (i.second)->_out.erase(j);
                 }
                 else
                 {
@@ -304,9 +314,12 @@ void Graph<N, E>::deleteNode(const N& src) noexcept
 }
 
 template<typename N, typename E>
-void Graph<N, E>::deleteEdge(const N& src, const N& dst, const E& w) noexcept
+void Graph<N, E>::deleteEdge(const N& src,
+                             const N& dst,
+                             const E& w) noexcept
 {
-    if (_nodes_map.find(src) == _nodes_map.end() || _nodes_map.find(dst) == _nodes_map.end())
+    if (_nodes_map.find(src) == _nodes_map.end() ||
+        _nodes_map.find(dst) == _nodes_map.end())
     {
         return;
     }
@@ -332,7 +345,8 @@ bool Graph<N, E>::isNode(const N& val) const
 template<typename N, typename E>
 bool Graph<N, E>::isConnected(const N& src, const N& dst) const
 {
-    if (_nodes_map.find(src) == _nodes_map.end() || _nodes_map.find(dst) == _nodes_map.end())
+    if (_nodes_map.find(src) == _nodes_map.end() ||
+        _nodes_map.find(dst) == _nodes_map.end())
     {
         throw std::runtime_error("either src or dst is not in the graph while calling isConnected");
     }
@@ -341,23 +355,23 @@ bool Graph<N, E>::isConnected(const N& src, const N& dst) const
     assert(_is_same_id(src_node->_id , src));
     assert(_is_same_id(dst_node->_id , dst));
 
-    return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(), [&](const std::unique_ptr<Edge>& a) -> bool
+    return std::find_if(src_node->_out.cbegin(), src_node->_out.cend(),
+                        [&](const std::unique_ptr<Edge>& a) -> bool
                         {
                             return (_is_same_id(a->_dst.lock()->_id, dst));
-
-                        }) !=  src_node->_out.cend();
+                        }) != src_node->_out.cend();
 }
 
 template<typename N, typename E>
 void Graph<N, E>::printNodes(std::ostream& os) const
 {
     std::vector<std::shared_ptr<Node> > tmp;
-    for (auto i = _nodes_map.begin(); i != _nodes_map.end(); ++ i)
+    for (const auto& i : _nodes_map)
     {
-        tmp.push_back(i->second);
+        tmp.push_back(i.second);
     }
     std::sort(tmp.begin(), tmp.end(),
-              [](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) ->bool
+              [](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) -> bool
               {
                   if (a->_out.size() != b->_out.size())
                   {
@@ -365,13 +379,13 @@ void Graph<N, E>::printNodes(std::ostream& os) const
                   }
                   else
                   {
-                      return a->_id < b ->_id;
+                      return a->_id < b->_id;
                   }
               }
              );
-    for (auto i = tmp.cbegin(); i != tmp.cend(); ++ i)
+    for (const auto& i : tmp)
     {
-        os << (*i)->_id << std::endl;
+        os << i->_id << std::endl;
     }
 }
 
@@ -382,7 +396,7 @@ void Graph<N, E>::printEdges(const N& val, std::ostream& os) const
     {
         throw std::runtime_error("no thing to printEdges");
     }
-    os << "Edges attached to Node " << val << std::endl;// XXX overload ostream<<?
+    os << "Edges attached to Node " << val << std::endl;
     auto& node = _nodes_map.find(val)->second;
     if (node->_out.size() == 0)
     {
@@ -391,13 +405,13 @@ void Graph<N, E>::printEdges(const N& val, std::ostream& os) const
     }
 
     std::vector<std::pair<N, E> > tmp;
-    for (auto i = node->_out.cbegin(); i != node->_out.cend(); ++ i)
+    for (const auto& i : node->_out)
     {
-        tmp.push_back(std::make_pair((*i)->_dst.lock()->_id,(*i)->_weight));
+        tmp.push_back(std::make_pair((i)->_dst.lock()->_id,(i)->_weight));
     }
-
+    // print order should first sorted by weight, than the val
     std::sort(tmp.begin(), tmp.end(),
-              [](const std::pair<N, E>& a, const std::pair<N, E>& b) ->bool
+              [](const std::pair<N, E>& a, const std::pair<N, E>& b) -> bool
               {
                   if (!_is_same_weight(a.second, b.second))
                   {
@@ -406,32 +420,28 @@ void Graph<N, E>::printEdges(const N& val, std::ostream& os) const
                   return a.first < b .first;
               }
              );
-    for (auto i = tmp.cbegin(); i != tmp.cend(); ++ i)
+    for (const auto& i : tmp)
     {
-        os << i->first << " " << i->second << std::endl;
+        os << i.first << " " << i.second << std::endl;
     }
-
 }
 
 template<typename N, typename E>
 void Graph<N, E>::begin() const
 {
     _it = _nodes_map.cbegin();
-
 }
 
 template<typename N, typename E>
 bool Graph<N, E>::end() const
 {
     return _it == _nodes_map.cend();
-
 }
 
 template<typename N, typename E>
 void Graph<N, E>::next() const
 {
     ++ _it;
-
 }
 
 template<typename N, typename E>

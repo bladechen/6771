@@ -69,7 +69,6 @@ void Graph<N, E>::_deep_copy(const Graph<N, E>& g)
         {
             _nodes_map.insert(std::make_pair(i.first, std::make_shared<Graph<N, E>::Node>(i.first)));
         }
-
         // go though all the node to copy the edge from the previous graph
         for (const auto& i : g._nodes_map)
         {
@@ -291,17 +290,18 @@ void Graph<N, E>::deleteNode(const N& src) noexcept
     {
         return;
     }
+    // remove the edge whose dst is src.
     for (const auto& i : _nodes_map)
     {
         if (!_is_same_id(i.second->_id , src))
         {
             std::vector<E> tmp;
-            for (auto j = (i.second)->_out.cbegin(); j != (i.second)->_out.cend();)
+            for (auto j = i.second->_out.cbegin(); j != i.second->_out.cend();)
             {
                 const auto& dst_node = (*j)->_dst.lock();
                 if (_is_same_id(dst_node->_id, src))
                 {
-                    j = (i.second)->_out.erase(j);
+                    j = i.second->_out.erase(j);
                 }
                 else
                 {

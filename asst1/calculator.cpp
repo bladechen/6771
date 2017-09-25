@@ -248,7 +248,6 @@ void do_calc(const std::string& next_symbol, std::stack<Digit>& st)
 
 void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
 {
-    std::vector<std::string> repeat_tokens;
     // should use vector index to handle nested repeat easily.
     // not be banned in the asst spec. so i use it.
     for (size_t i = 0; i < input.size(); ++ i)
@@ -256,7 +255,6 @@ void calc(const std::vector<std::string> & input, std::stack<Digit>& st)
         const std::string& cur_symbol = input[i];
         if (cur_symbol == "repeat")
         {
-            repeat_tokens.clear();
             Digit tmp = get_next_digit(st);
             int repeat_count = tmp.get_int();
             // find next related endrepeat

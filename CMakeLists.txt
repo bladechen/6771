@@ -11,7 +11,6 @@
 #
 # "Adapted" from cmcstl2's top-level CMakeLists.txt
 #
-cmake_minimum_required(VERSION 3.4.3)
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-4.9")
 
@@ -23,8 +22,8 @@ include(FindUnixCommands)
 
 
 set( CMAKE_VERBOSE_MAKEFILE on )
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Werror")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Werror -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -ggdb3")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -g0 -DNDEBUG")
 
 
@@ -45,7 +44,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -g0 -DNDEBUG")
 
 # include_directories(include)
 
-add_subdirectory(lecture)
+# add_subdirectory(lecture)
 add_subdirectory(asst1)
 add_subdirectory(asst3)
 # add_subdirectory(test)

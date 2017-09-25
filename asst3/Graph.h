@@ -49,7 +49,7 @@ namespace gdwg
                 class Node;
                 class Edge;
 
-                std::map<N, std::shared_ptr<Node>> _nodes_map; // store all the Node in this map
+                std::map<N, std::shared_ptr<Node>> _nodes_map; // store all the Node in this graph
                 mutable typename std::map<N, std::shared_ptr<Node>>::const_iterator _it;
 
                 static bool _is_same_id(const N& l, const N& r);
@@ -93,7 +93,7 @@ namespace gdwg
                         void delete_edge(const N& dst, const E& weight) noexcept;
 
                         N _id;
-                        std::set<std::unique_ptr<Edge>, EdgeLessOperator> _out;
+                        std::set<std::unique_ptr<Edge>, EdgeLessOperator> _out; // the out going edge
 
                 };
         };

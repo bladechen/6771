@@ -26,7 +26,12 @@
 *.a
 *.lib
 
+ctags
+c_tags
+c_*
+
 # Executables
 *.exe
 *.out
 *.app
+hello_world

@@ -230,7 +230,7 @@ class btree
             enum ELEMENT_MARKER_E _marker;
             // internal nodes only use _right
             Node* _right{nullptr};
-            Node* _right{nullptr};
+            Node* _left {nullptr};
             Node* _owner{nullptr};
 
             bool operator< (const Element& right)
@@ -258,9 +258,10 @@ class btree
         struct Node
         {
             Node() = default;
-            Node(const T& t)
+            Node(const T& t, const Node* left, Node* right, const std::vector<Element>::iterator& parent)
             {
-                _elems.emplace_back(t, this, nullptr, nullptr);
+                _parent = parent;
+                _elems.emplace_back(t, this, left, right);
             }
 
             void destroy()
@@ -272,7 +273,10 @@ class btree
                 destroy();
             }
             std::vector<Element> _elems;
+            std::vector<Element>::iterator             _parent;
 
+            // in the elems array, find the first one large or equal one,
+            // if can not find, return end()
             std::pair<std::vector<Element>::iterator, bool>
                 find_equal_or_large(const T& val)
             {
@@ -295,32 +299,42 @@ class btree
         Node      _dummy_begin;
         Node      _dummy_end;
 
-        Element*  _dummy_begin_elem()
+
+        std::vector<Element>::iterator _dummy_begin_iter() const
         {
-            if (_dummy_begin._elems() == 0)
-            {
-                _dummy_begin._elems.emplace_back(HEAD_ELEMENT, &_begin_elem);
-            }
-            return &_dummy_begin._elems[0];
+            assert(_dummy_begin._elems.size() != 0U);
+            // if (_dummy_begin._elems() == 0)
+            // {
+            //     _dummy_begin._elems.emplace_back(HEAD_ELEMENT, &_begin_elem);
+            // }
+            return _dummy_begin._elems.begin();
         }
 
-        Element* _dummy_end_elem()
+        std::vector<Element>::iterator _dummy_end_iter() const
         {
-            if (_dummy_end._elems() == 0)
-            {
-                _dummy_end._elems.emplace_back(TAIL_ELEMENT, &_end_elem);
-            }
-            return &_dummy_end._elems[0];
+
+            assert(_dummy_end._elems.size() != 0U);
+            // if (_dummy_end._elems() == 0)
+            // {
+            //     _dummy_end._elems.emplace_back(TAIL_ELEMENT, &_end_elem);
+            // }
+            return _dummy_end._elems.begin();
         }
 
-        Element* _begin_elem()
+        std::vector<Element>::iterator _first_elem_iter()
         {
-            return &_dummy_begin_elem()->_right->_elems[0];
+            return _dummy_begin_iter()->_right->_elems.begin();
         }
 
-        Element* _end_elem()
+        std::vector<Element>::iterator _last_elem_iter()
         {
-            return &_dummy_end_elem()->_right->_elems[_dummy_end_elem()->_right->_elems.size() - 1];
+            return _dummy_end_iter()->_left->_elems.rbegin();
+        }
+
+        // XXX caller should make sure it is not the end() of vector
+        Element* _iter_to_elem(const std::vector<Element>::iterator& it)
+        {
+            return &(*it);
         }
 
         bool _has_left_children_node(const Element* el)
@@ -329,7 +343,7 @@ class btree
             {
                 return false;
             }
-            if (el->_left == _dummy_begin_elem())
+            if (el->_left == &_dummy_begin)
             {
                 return false;
             }
@@ -342,96 +356,107 @@ class btree
             {
                 return false;
             }
-            if (el->_right == _dummy_end_elem())
+            if (el->_right == &_dummy_end)
             {
                 return false;
             }
             return true;
         }
 
-        Element* find_elem(const T& val) const
+        std::vector<Element>::iterator find_elem(const T& val) const
         {
             if (_root == nullptr)
             {
-                return nullptr;
+                return _dummy_end_iter();
             }
             Node* cur = _root;
             while (true)
             {
                 auto it_bool_pair = cur->find_equal_or_large(elem);
+                // have find the one exactly equal to elem
                 if (it_bool_pair.second == true && it_bool_pair.first->_val == elem)
                 {
-                    return &(*it_bool_pair.first);
+                    return it_bool_pair.first;
                 }
+                // the elems array not full, so there is no possible for them have children nodes. stop here.
                 if (cur->_elems.size() < _max_elem_in_node)
                 {
-                    return nullptr;
+                    return _dummy_end_iter();
                 }
-                else
+                else //if (it_bool_pair.second != )
                 {
+                    // find one elem bigger than val, then should look at its _left branch
                     if (it_bool_pair.second == true)
                     {
-                        if (_has_left_children_node(&(*it_bool_pair.first)))
+                        if (_has_left_children_node(_iter_to_elem(it_bool_pair.first))))
                         {
                             cur = it_bool_pair.first->_left;
                             continue;
                         }
-                        return nullptr;
+                        return _dummy_end_iter();
                     }
                     else
                     {
-                        Element* last = &cur->elems[cur->elems.size() - 1];
+                        Element* last = _iter_to_elem(cur->elems.rbegin());
                         if (_has_right_children_node(last))
                         {
-                            cur = last;
+                            cur = last->_right;
                             continue;
                         }
-                        return nullptr;
+                        return _dummy_end_iter();
                     }
                 }
             }
-            return std::make_pair(ret, true);
+            assert(0);
+            return _dummy_end_iter();
         }
 
         void update_begin_end(Element* el)
         {
             assert(el != NULL);
 
-            Element* first_elem = _begin_elem();
-            Element* last_elem = _end_elem();
+            Element* first_elem = _iter_to_elem(_first_elem_iter());
+            Element* last_elem = _iter_to_elem(_last_elem_iter());
+
+            // smaller than current smallest one, update _dummy_begin
             if (el->_val < first_elem->_val)
             {
-                assert(el->_left== nullptr);
+                assert(el->_left == nullptr);
                 assert(first_elem->_left == &_dummy_begin);
-                assert(_dummy_begin_elem()->_right == first_elem->_owner);
+                assert(_dummy_begin_iter()->_right == first_elem->_owner);
+
                 el->_left = &_dummy_begin;
                 first_elem->_left = nullptr;
-                _dummy_begin_elem()->_right = el;
+                _dummy_begin_iter()->_right = el;
             }
             if (el->_val > last_elem->_val)
             {
                 assert(el->_right == nullptr);
                 assert(last_elem->_right == &_dummy_end);
-                assert(_dummy_end_elem()->_left == last_elem->_owner);
+                assert(_dummy_end_iter()->_left == last_elem->_owner);
                 el->_right = &_dummy_end;
                 last_elem->_right = nullptr;
-                _dummy_end_elem()->_left = el;
+                _dummy_end_iter()->_left = el;
             }
         }
 
-        void init(Node* begin = nullptr, Node* end = nullptr)
+        // should only called at the very begin
+        void init_node_iter(Node* begin = nullptr, Node* end = nullptr)
         {
-            _dummy_begin_elem()->_left = nullptr;
-            _dummy_end_elem()->_right = nullptr;
-            _dummy_begin_elem()->_right = begin;
-            _dummy_end_elem()->_left = end;
+            _dummy_begin_iter()->_left = nullptr;
+            _dummy_end_iter()->_right = nullptr;
+            _dummy_begin_iter()->_right = begin;
+            _dummy_end_iter()->_left = end;
             if (begin != nullptr)
             {
-                assert(end != nullptr);
-                begin->_left = &_dummy_begin;
-                end->_right = &_dummy_end;
+                assert(end == begin);
+                begin->elems.begin()->_left = &_dummy_begin;
+                begin->elems.begin()->_right = &_dummy_end;
+                // begin->_left = &_dummy_begin;
+                // end->_right = &_dummy_end;
             }
         }
+
         void clear()
         {
             if (_root != nullptr)
@@ -440,6 +465,7 @@ class btree
                 delete _root;
                 _root = nullptr;
             }
+            init_node_iter();
             _elem_count = 0;
         }
 
@@ -461,16 +487,16 @@ class btree
         {
             _root = nullptr;
             _elem_count = 0;
-            init(nullptr);
+            clear();
         }
 
-        void shallow_copy(const btree<T>& rhs)
+        void shallow_copy(btree<T>& rhs)
         {
             assert(empty());
             _elem_count = rhs._elem_count;
             _max_elem_in_node = rhs._max_elem_in_node;
             _root = rhs._root;
-            init(rhs._dummy_begin_elem()->_right, rhs._dummy_end_elem()->_left);
+            init_node_iter(rhs._dummy_begin_iter()->_right, rhs._dummy_end_iter()->_left);
         }
 
         void deep_copy(const btree<T>& rhs)
@@ -483,13 +509,26 @@ class btree
 
         }
 
+        std::vector<Element>::iterator backward_iter(const std::vector<Element>::iterator& cur_iter)
+        {
+            std::vector<Element>::iterator ret = _du
+        }
+
+        std::vector<Element>::iterator forward_iter(const std::vector<Element>::iterator& cur_iter)
+        {
+
+        }
+
 };
 
 
 template<typename T>
 btree<T>::btree(size_t maxNodeElems): _max_elem_in_node{maxNodeElems}
 {
-    init();
+
+    _dummy_begin._elems.emplace_back(HEAD_ELEMENT, &_dummy_begin);
+    _dummy_end._elems.emplace_back(TAIL_ELEMENT, &_dummy_end);
+    init_node_iter();
 }
 
 template<typename T>
@@ -574,13 +613,13 @@ iterator btree<T>::begin()
     {
         return end();
     }
-    return iterator{_begin_elem()};
+    return iterator{_first_elem_iter()};
 }
 
 template<typename T>
 iterator btree<T>::end()
 {
-    return iterator(_dummy_end_elem());
+    return iterator(this, _dummy_end_iter());
 }
 
 template<typename T>
@@ -590,37 +629,28 @@ const_iterator btree<T>::cbegin() const
     {
         return cend();
     }
-    return const_iterator{_begin_elem()};
+    return const_iterator{_first_elem_iter()};
 }
 
 template<typename T>
 const_iterator btree<T>::cend() const
 {
-    return const_iterator(_dummy_end_elem());
+    return const_iterator(this, _dummy_end_iter());
 }
 
 template<typename T>
 iterator btree<T>::find(const T& elem)
 {
     auto e = find_elem(elem);
-    if (e == nullptr)
-    {
-        return end();
-    }
-    return iterator(e);
+    return iterator(this, e);
 }
 
 template<typename T>
 const_iterator btree<T>::find(const T& elem) const
 {
     auto e = find_elem(elem);
-    if (e == nullptr)
-    {
-        return end();
-    }
-    return const_iterator(e);
+    return const_iterator(this, e);
 }
-
 
 template<typename T>
 std::pair<iterator, bool> btree<T>::insert(const T& elem)
@@ -628,72 +658,80 @@ std::pair<iterator, bool> btree<T>::insert(const T& elem)
     assert(_max_elem_in_node > 0); //TODO check spec
     if (_root == nullptr)
     {
-        _root = new Node();
-        init(&_root, &_root);
+        _root = new Node(elem, &_dummy_begin, &_dummy_end);
+        init_node_iter(_root, _root);
         _elem_count = 1;
-        _root->_elems.emplace_back(elem, _root, &_dummy_begin, &_dummy_end);
-        return std::make_pair<iterator, bool>(iterator(&(*_root->_elems.begin())), true);
+        // _root->_elems.emplace_back(elem, _root, &_dummy_begin, &_dummy_end);
+        // return std::make_pair<iterator, bool>(iterator(&(*_root->_elems.begin())), true);
+        return std::make_pair<iterator, bool>(iterator(this, _first_elem_iter(), true));
     }
 
+    std::vector<Element>::iterator parent = _dummy_end_iter();
     Node* cur = _root;
-    iterator ret;
+    iterator ret = _dummy_end_iter();
+    bool _not_find = true;
     while (true)
     {
-        // can insert to this node.
         auto it_bool_pair = cur->find_equal_or_large(elem);
+        // already in btree
         if (it_bool_pair.second == true && it_bool_pair.first->_val == elem)
         {
-            return std::make_pair(iterator(&(*it_bool_pair.first)), false);
+            _not_find = false;
+            ret = iterator(this, it_bool_pair.first);
+            break;
         }
-        // it should not have any children node, and insert here
+        // it should not have any children nodes, and insert here
         if (cur->_elems.size() < _max_elem_in_node)
         {
             ++ _elem_count;
-            std::vector<Element>::it = cur->_elems.emplace(it_bool_pair.first, cur, nullptr, nullptr);
-            update_begin_end(&(*it));
-            ret = iterator(&(*it));
+            std::vector<Element>::iterator it = cur->_elems.emplace(it_bool_pair.first, cur, nullptr, nullptr);
+            update_begin_end(_iter_to_elem(it));
+            ret = iterator(this, it);
+            break;
         }
-        // reach the max limited node size
+        // reach the max limited elems size
         else
         {
-            // insert _left part
             if (it_bool_pair.second == true)
             {
-                // recursive find
-                if (_has_left_children_node(&(*it_bool_pair.first)))
+                // recursive find in _left node
+                if (_has_left_children_node(_iter_to_elem(it_bool_pair.first)))
                 {
                     cur = it_bool_pair.first->_left;
+                    parent = it_bool_pair.first;
                     continue;
                 }
+                // should create new left node, and be the first elem in this node
                 else
                 {
-                    Node* n = new Node(elem);
-                    update_begin_end(&(n->elems[0]));
+                    Node* n = new Node(elem, nullptr, nullptr, parent);
+                    update_begin_end(_iter_to_elem(n->elems.begin()));
                     it_bool_pair.first->_left = n;
-                    ret = iterator(&(n->elems[0]));
+                    ret = iterator(this, n->elems.begin());
                     break;
                 }
             }
             // the biggest one.
             else
             {
-                Element* last = &cur->elems[cur->elems.size() - 1];
+                Element* last = _iter_to_elem(cur->elems.rbegin());
                 if (_has_right_children_node(last))
                 {
+                    parent = cur->elems.rbegin();
                     cur = last;
                     continue;
                 }
                 else
                 {
-                    Node* n = new Node(elem);
-                    update_begin_end(&(n->elems[0]));
-                    last->_left = n;
-                    ret = iterator(&(n->elems[0]));
+                    Node* n = new Node(elem, nullptr, nullptr, parent);
+                    update_begin_end(_iter_to_elem(n->elems.begin()));
+                    last->_right = n;
+                    ret = iterator(this, n->elems.begin());
                     break;
                 }
             }
         }
     }
-    return std::make_pair(ret, true);
+    return std::make_pair(ret, _not_find);
 }
 #endif

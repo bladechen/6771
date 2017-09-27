@@ -39,7 +39,8 @@ public:
     using pointer = IT*;
     using reference = IT&;
 
-    btree_iterator(Element* elem) : _index{elem} {};
+    btree_iterator(const std::vector<typename btree<T>::Element>::iterator& it,
+                   const btree<T>* tree) : _it{it},  _owner {tree} {};
     btree_iterator(const btree_iterator& it);
 
     // // TODO
@@ -58,7 +59,8 @@ public:
     friend  bool operator ==<>(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r);
     friend  bool operator !=<>(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r);
 private:
-    typename std::vector<Element>::iterator _it;
+    typename std::vector<typename btree<T>::Element>::iterator _it;
+    btree<T>* _owner{nullptr};
 };
 
 // FIXME
@@ -66,6 +68,7 @@ template <typename T,template <typename U> class Constness>
 btree_iterator<T, Constness>::btree_iterator(const btree_iterator<T, Constness>& it)
 {
     _it = it->_it;
+    _owner = it->_owner;
 }
 
 template <typename T,template <typename U> class Constness>
@@ -83,6 +86,8 @@ pointer   btree_iterator<T, Constness>::operator->() const
 template <typename T,template <typename U> class Constness>
 btree_iterator& btree_iterator<T, Constness>::operator--()
 {
+    _it = _owner->backward_iter(_it);
+    return *this;
 }
 
 template <typename T,template <typename U> class Constness>
@@ -96,12 +101,8 @@ btree_iterator  btree_iterator<T, Constness>::operator--(int)
 template <typename T,template <typename U> class Constness>
 btree_iterator& btree_iterator<T, Constness>::operator++()
 {
-    assert(_index != nullptr && _index->marker != HEAD_ELEMENT);
-
-    for
-
+    _it = _owner->forward_iter(_it);
     return *this;
-    // if (_index->)
 }
 
 template <typename T,template <typename U> class Constness>
@@ -121,7 +122,7 @@ operator btree_iterator<T, Constness>::btree_iterator<T, std::add_const>()
 template <typename T,template <typename U> class Constness>
 bool operator==(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r)
 {
-    return l->_it == r->_it;
+    return l->_owner == r->_owner && l->_it == r->_it;
 }
 
 template <typename T,template <typename U> class Constness>

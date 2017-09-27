@@ -46,11 +46,11 @@ class btree_iterator
             using type = typename std::vector<typename btree<T1>::Element>::iterator;
         };
 
-        template <typename T1>
-        struct vector_iterator<T1,  std::add_const>
-        {
-            using type = typename std::vector<typename btree<T1>::Element>::const_iterator;
-        };
+        // template <typename T1>
+        // struct vector_iterator<T1,  std::add_const>
+        // {
+        //     using type = typename std::vector<typename btree<T1>::Element>::const_iterator;
+        // };
 
 
         template <typename T1, template <typename U1> class Constness1>
@@ -64,8 +64,6 @@ class btree_iterator
         {
             using type = const btree<T>*;
         };
-
-
 
 
     using vector_iterator_type = typename vector_iterator<T, Constness>::type;

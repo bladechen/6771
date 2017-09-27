@@ -21,26 +21,64 @@ class Identity
 };
 
 template <typename T,template <typename U> class Constness> class btree_iterator;
-template <typename T,template <typename U> class Constness>
-bool operator==(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r);
 
-template <typename T,template <typename U> class Constness>
-bool operator!=(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r);
+template <typename T,template <typename U> class Constness
+,typename T1,template <typename U1> class Constness1>
+bool operator==(const btree_iterator<T, Constness>& l, const btree_iterator<T1, Constness1>& r);
+
+template <typename T,template <typename U> class Constness, typename T1,template <typename U1> class Constness1>
+bool operator!=(const btree_iterator<T, Constness>& l, const btree_iterator<T1, Constness1>& r);
+
+template <typename T>
+class btree;
 
 template <typename T,
           template <typename U> class Constness = Identity>
 class btree_iterator
 {
+
     using IT = typename Constness<T>::type;
+    // ty
+
+        template <typename T1, template <typename U1> class Constness1>
+        struct vector_iterator
+        {
+            using type = typename std::vector<typename btree<T1>::Element>::iterator;
+        };
+
+        template <typename T1>
+        struct vector_iterator<T1,  std::add_const>
+        {
+            using type = typename std::vector<typename btree<T1>::Element>::const_iterator;
+        };
+
+
+        template <typename T1, template <typename U1> class Constness1>
+        struct btree_t
+        {
+            using type = btree<T>*;
+        };
+
+        template <typename T1>
+        struct btree_t<T1,  std::add_const>
+        {
+            using type = const btree<T>*;
+        };
+
+
+
+
+    using vector_iterator_type = typename vector_iterator<T, Constness>::type;
+    using btree_type = typename  btree_t<T, Constness>::type;
 public:
-    using iterator_category = std::bidirectional_iterator_tag iterator_category;
-    using difference_type = std::ptrdiff_t difference_type;
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
     using value_type = T;
     using pointer = IT*;
     using reference = IT&;
 
-    btree_iterator(const std::vector<typename btree<T>::Element>::iterator& it,
-                   const btree<T>* tree) : _it{it},  _owner {tree} {};
+    btree_iterator(btree_type  tree, const vector_iterator_type& it
+                   ) : _it{it},  _owner {tree} {};
     btree_iterator(const btree_iterator& it);
 
     // // TODO
@@ -56,42 +94,46 @@ public:
 
     operator btree_iterator<T, std::add_const>();
     // TODO non-const == const?
-    friend  bool operator ==<>(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r);
-    friend  bool operator !=<>(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r);
+    template <typename T0,template <typename U0> class Constness0 ,typename T1,template <typename U1> class Constness1>
+    friend  bool operator ==(const btree_iterator<T0, Constness0>& l, const btree_iterator<T1, Constness1>& r);
+
+    template <typename T0,template <typename U0> class Constness0 ,typename T1,template <typename U1> class Constness1>
+    friend  bool operator !=(const btree_iterator<T0, Constness0>& l, const btree_iterator<T1, Constness1>& r);
 private:
-    typename std::vector<typename btree<T>::Element>::iterator _it;
-    btree<T>* _owner{nullptr};
+    vector_iterator_type _it;
+    // typename std::vector<typename btree<T>::Element>::iterator _it;
+    btree_type _owner{nullptr};
 };
 
-// FIXME
+// FIXME for const
 template <typename T,template <typename U> class Constness>
 btree_iterator<T, Constness>::btree_iterator(const btree_iterator<T, Constness>& it)
 {
-    _it = it->_it;
-    _owner = it->_owner;
+    _it = it._it;
+    _owner = it._owner;
 }
 
 template <typename T,template <typename U> class Constness>
-reference btree_iterator<T, Constness>::operator*() const
+typename btree_iterator<T, Constness>::reference btree_iterator<T, Constness>::operator*() const
 {
     return _it->_val;
 }
 
 template <typename T,template <typename U> class Constness>
-pointer   btree_iterator<T, Constness>::operator->() const
+typename btree_iterator<T, Constness>::pointer   btree_iterator<T, Constness>::operator->() const
 {
     return &(*this);
 }
 
 template <typename T,template <typename U> class Constness>
-btree_iterator& btree_iterator<T, Constness>::operator--()
+btree_iterator<T, Constness>& btree_iterator<T, Constness>::operator--()
 {
     _it = _owner->backward_iter(_it);
     return *this;
 }
 
 template <typename T,template <typename U> class Constness>
-btree_iterator  btree_iterator<T, Constness>::operator--(int)
+btree_iterator<T, Constness>  btree_iterator<T, Constness>::operator--(int)
 {
     btree_iterator ret = *this;
     -- (*this);
@@ -99,14 +141,14 @@ btree_iterator  btree_iterator<T, Constness>::operator--(int)
 }
 
 template <typename T,template <typename U> class Constness>
-btree_iterator& btree_iterator<T, Constness>::operator++()
+btree_iterator<T, Constness>& btree_iterator<T, Constness>::operator++()
 {
     _it = _owner->forward_iter(_it);
     return *this;
 }
 
 template <typename T,template <typename U> class Constness>
-btree_iterator btree_iterator<T, Constness>::operator++(int)
+btree_iterator<T, Constness> btree_iterator<T, Constness>::operator++(int)
 {
     btree_iterator ret = *this;
     ++ (*this);
@@ -114,19 +156,20 @@ btree_iterator btree_iterator<T, Constness>::operator++(int)
 }
 
 template <typename T,template <typename U> class Constness>
-operator btree_iterator<T, Constness>::btree_iterator<T, std::add_const>()
+btree_iterator<T, Constness>::operator btree_iterator<T, std::add_const>()
 {
     return btree_iterator<T, std::add_const>(*this);
 }
 
-template <typename T,template <typename U> class Constness>
-bool operator==(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r)
+// template <typename T,template <typename U> class Constness>
+    template <typename T0,template <typename U0> class Constness0 ,typename T1,template <typename U1> class Constness1>
+bool operator==(const btree_iterator<T0, Constness0>& l, const btree_iterator<T1, Constness1>& r)
 {
-    return l->_owner == r->_owner && l->_it == r->_it;
+    return (l._owner == r._owner && l._it == r._it);
 }
 
-template <typename T,template <typename U> class Constness>
-bool operator!=(const btree_iterator<T, Constness>& l, const btree_iterator<T, Constness>& r)
+    template <typename T0,template <typename U0> class Constness0 ,typename T1,template <typename U1> class Constness1>
+bool operator!=(const btree_iterator<T0, Constness0>& l, const btree_iterator<T1, Constness1>& r)
 {
     return !(l == r);
 }

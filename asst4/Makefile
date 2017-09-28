@@ -6,7 +6,7 @@
 CXX = g++
 
 ## compiler flags
-CXXFLAGS = -Wall -Werror -O2 -std=c++14 -fsanitize=address
+CXXFLAGS = -Wall -Werror -O0 -ggdb3 -std=c++14 -fsanitize=address
 ## enable this for debugging
 #CXXFLAGS = -Wall -g
 
@@ -23,5 +23,5 @@ all: $(OBJECTS)
 %: %.cpp btree.h btree_iterator.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-clean: 
+clean:
 	rm -f *.o a.out core out? $(OBJECTS)

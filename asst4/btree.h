@@ -12,6 +12,7 @@
 #ifndef BTREE_H
 #define BTREE_H
 
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 #include <cstddef>
@@ -317,16 +318,24 @@ class btree
             std::pair<typename std::vector<Element>::iterator, bool>
                 find_equal_or_large(const T& val)
             {
-                typename std::vector<Element>::iterator it = _elems.begin();
-                for (;it != _elems.end(); ++ it)
-                {
-                    if (it->_val >= val)
-                    {
-                        return std::make_pair(it, true);
-                        // return std::make_pair<typename std::vector<Element>::iterator, bool>(it, true);
-                    }
-                }
-                return std::make_pair<typename std::vector<Element>::iterator, bool>(_elems.end(), false);
+                // typename std::vector<Element>::iterator it = _elems.begin();
+
+                // for (;it != _elems.end(); ++ it)
+                // {
+                //     if (it->_val >= val)
+                //     {
+                //         return std::make_pair(it, true);
+                //         // return std::make_pair<typename std::vector<Element>::iterator, bool>(it, true);
+                //     }
+                // }
+
+                typename std::vector<Element>::iterator it = std::lower_bound(_elems.begin(), _elems.end(),  val,
+                                                                         [](const Element& e, const T& v) -> bool
+                                                                         {
+                                                                            return e._val < v;
+                                                                         });
+                bool flag = (it == _elems.end())? false:true;
+                return std::make_pair(it, flag);
             }
         };
 
@@ -471,15 +480,23 @@ class btree
         {
             assert(el != NULL);
 
-            auto smallest = std::find(_dummy->_elems.begin()->_right->_elems.begin(),
-                                      _dummy->_elems.begin()->_right->_elems.end(), Element(_min_val));
-            auto  biggest = std::find(_dummy->_elems.begin()->_left->_elems.begin(),
-                                      _dummy->_elems.begin()->_left->_elems.end(), Element(_max_val));
+            auto temp = _dummy->_elems.begin()->_right->find_equal_or_large(_min_val);
+            auto smallest = temp.first;
+
+            temp = _dummy->_elems.begin()->_left->find_equal_or_large(_max_val);
+            auto biggest = temp.first;
+
+
+            // auto smallest = std::find(_dummy->_elems.begin()->_right->_elems.begin(),
+            //                           _dummy->_elems.begin()->_right->_elems.end(), Element(_min_val));
+            // auto  biggest = std::find(_dummy->_elems.begin()->_left->_elems.begin(),
+            //                           _dummy->_elems.begin()->_left->_elems.end(), Element(_max_val));
             assert(smallest != _dummy->_elems.begin()->_right->_elems.end());
             assert(biggest != _dummy->_elems.begin()->_left->_elems.end());
 
             Element* first_elem = &(*smallest);
             Element* last_elem = &(*biggest);
+            // std::cout << "smallest: " << first_elem->_val << " biggest: " << last_elem->_val << "\n";
 
             // smaller than current smallest one, update _dummy_begin
             assert(el->_owner != nullptr);
@@ -630,7 +647,7 @@ class btree
                 typename std::vector<Element>::iterator it = ni.to_node->_elems.begin();
                 for (const auto& i : ni.from_node->_elems)
                 {
-                    std::cout << "insert: " << i._val << std::endl;
+                    // std::cout << "insert: " << i._val << std::endl;
                     if (!first_insert)
                     {
                         assert(ni.to_node == _root && ni.from_node == rhs._root);

@@ -78,6 +78,7 @@ public:
     btree_iterator(btree_type  tree, const vector_iterator_type& it
                    ) : _it{it},  _owner {tree} {};
     btree_iterator(const btree_iterator& it);
+    btree_iterator(){};
 
     // // TODO
     // reference operator*();

@@ -345,9 +345,9 @@ class btree
 
         Node*     _root{nullptr};
         size_type _elem_count{0};
-        size_t    _max_elem_in_node;
+        size_t    _max_elem_in_node{0};
 
-        Node* _dummy; //FIXME
+        Node* _dummy{nullptr}; //FIXME
 
         T     _max_val;
         T     _min_val;
@@ -607,18 +607,33 @@ class btree
             _min_val = rhs._min_val;
             _max_val = rhs._max_val;
             _dummy = rhs._dummy;
+            rhs._dummy = nullptr;
+            rhs.init_dummy();
             // init_node_iter(rhs._dummy_begin_iter()->_right, rhs._dummy_end_iter()->_left);
+        }
+
+        void init_dummy()
+        {
+            assert(_dummy == nullptr);
+            _dummy = new Node(_max_elem_in_node);
+            _dummy->_elems.emplace_back(DUMMY_EMELEMT, _dummy);
+            // _dummy._elems.emplace_back(TAIL_ELEMENT, &_dummy_end);
+            init_node_iter();
+
         }
 
         void deep_copy(const btree<T>& rhs)
         {
             assert(_root == nullptr);
+            if (rhs._root == nullptr)
+            {
+                return;
+            }
             _elem_count = rhs._elem_count;
             _max_elem_in_node = rhs._max_elem_in_node;
 
             _root = new Node(_max_elem_in_node);
             _root->_parent = _dummy_end_iter();
-
             struct NodeInfo
             {
                 Node* from_node;
@@ -754,24 +769,6 @@ class btree
                             break;
                         }
                     }
-                    // if (cur_iter == cur_node->_elems.begin()) // can move to right elem
-                    // {
-                    //     // (cur_iter != _first_elem_iter())
-                    //     ret = cur_iter;
-                    //     while (true)
-                    //     {
-                    //         if (ret == _first_elem_iter()) // already the begin()
-                    //         {
-                    //             ret = _dummy_end_iter();
-                    //             break;
-                    //         }
-                    //         ret = cur_node->_parent;
-                    //     }
-                    // }
-                    // else
-                    // {
-                    //     ret = cur_iter - 1;
-                    // }
                 }
             }
             return ret;
@@ -852,11 +849,12 @@ class btree
 template<typename T>
 btree<T>::btree(size_t maxNodeElems): _max_elem_in_node{maxNodeElems}
 {
+    init_dummy();
 
-    _dummy = new Node(_max_elem_in_node);
-    _dummy->_elems.emplace_back(DUMMY_EMELEMT, _dummy);
-    // _dummy._elems.emplace_back(TAIL_ELEMENT, &_dummy_end);
-    init_node_iter();
+    // _dummy = new Node(_max_elem_in_node);
+    // _dummy->_elems.emplace_back(DUMMY_EMELEMT, _dummy);
+    // // _dummy._elems.emplace_back(TAIL_ELEMENT, &_dummy_end);
+    // init_node_iter();
 }
 
 template<typename T>
@@ -910,6 +908,11 @@ btree<T>& btree<T>::operator=(btree<T>&& rhs) noexcept
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const btree<T>& tree)
 {
+    if (tree._root == nullptr)
+    {
+        assert(tree._elem_count == 0);
+        return os;
+    }
     bool first = true;
     std::queue<typename btree<T>::Node*> q;
     q.push(tree._root);

@@ -296,7 +296,7 @@ class btree
         {
             Node(size_t max_elems)
             {
-                _elems.reserve(max_elems);
+                // _elems.reserve(max_elems);
             };
             Node(size_t max_elems, const T& t, Node* left, Node* right, const typename std::vector<Element>::iterator& parent)
                 :Node(max_elems)
@@ -322,17 +322,6 @@ class btree
             std::pair<typename std::vector<Element>::iterator, bool>
                 find_equal_or_large(const T& val)
             {
-                // typename std::vector<Element>::iterator it = _elems.begin();
-
-                // for (;it != _elems.end(); ++ it)
-                // {
-                //     if (it->_val >= val)
-                //     {
-                //         return std::make_pair(it, true);
-                //         // return std::make_pair<typename std::vector<Element>::iterator, bool>(it, true);
-                //     }
-                // }
-
                 typename std::vector<Element>::iterator it = std::lower_bound(_elems.begin(), _elems.end(),  val,
                                                                          [](const Element& e, const T& v) -> bool
                                                                          {
@@ -349,10 +338,6 @@ class btree
 
         Node* _dummy{nullptr}; //FIXME
 
-        // T     _max_val;
-        // T     _min_val;
-        // Node      _dummy_begin;
-        // Node      _dummy_end;
 
         typename std::vector<Element>::iterator _dummy_begin_iter() const
         {
@@ -386,12 +371,6 @@ class btree
         {
             return last_iter(_dummy_end_iter()->_left->_elems);
         }
-
-        // typename std::vector<Element>::iterator _end_elem_iter() const
-        // {
-        //     return _dummy_end_iter()->_left->_elems.end();
-        // }
-
 
 
         // XXX caller should make sure it is not the end() of vector
@@ -679,15 +658,11 @@ class btree
             {
                 NodeInfo ni = q.front();
                 q.pop();
-                // for (const auto& i : ni.from_node->_elems)
-                // {
-                //     ni.to_node->_elems.emplace_back(i._val, ni.to_node, nullptr, nullptr);
-                // }
-                typename std::vector<Element>::iterator it = ni.to_node->_elems.begin();
+
+                size_t idx = 0;
                 for (const auto& i : ni.from_node->_elems)
                 {
                     ni.to_node->_elems.emplace_back(i._val, ni.to_node, nullptr, nullptr);
-                    // std::cout << "insert: " << i._val << std::endl;
                     if (!first_insert)
                     {
                         assert(ni.to_node == _root && ni.from_node == rhs._root);
@@ -696,8 +671,19 @@ class btree
                     }
                     else
                     {
-                        update_begin_end(_iter_to_elem(it));
+                        update_begin_end(&ni.to_node->_elems[idx]);
                     }
+                    ++ idx;
+                    // ++ it;
+                }
+
+                typename std::vector<Element>::iterator it = ni.to_node->_elems.begin();
+                // it = ni.to_node->_elems.begin();
+                for (const auto& i : ni.from_node->_elems)
+                {
+                    // ni.to_node->_elems.emplace_back(i._val, ni.to_node, nullptr, nullptr);
+                    // std::cout << "insert: " << i._val << std::endl;
+
                     if (rhs._has_left_children_node(&i))
                     {
                         Node* tmp = new Node(_max_elem_in_node);
@@ -714,7 +700,7 @@ class btree
                         q.push(NodeInfo(i._right, tmp, it));
                     }
                     assert(it != ni.to_node->_elems.end());
-                    it ++;
+                    ++ it ;
                 }
             }
             // assert(_min_val == rhs._min_val);

@@ -611,10 +611,20 @@ class btree
             _root = rhs._root;
             // _min_val = rhs._min_val;
             // _max_val = rhs._max_val;
+            destroy_dummy();
             _dummy = rhs._dummy;
             rhs._dummy = nullptr;
             rhs.init_dummy();
             // init_node_iter(rhs._dummy_begin_iter()->_right, rhs._dummy_end_iter()->_left);
+        }
+
+        void destroy_dummy()
+        {
+            if (_dummy != nullptr)
+            {
+                delete _dummy;
+                _dummy = nullptr;
+            }
         }
 
         void init_dummy()
@@ -876,11 +886,8 @@ btree<T>::~btree()
     // TODO
     tree_clear();
     // std::cout << "clear dummy..\n";
-    if (_dummy != nullptr)
-    {
-        delete _dummy;
-        _dummy = nullptr;
-    }
+    destroy_dummy();
+
 }
 
 template<typename T>

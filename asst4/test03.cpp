@@ -8,7 +8,7 @@
 template <typename T>
 void find_in_tree(const btree<T> &b, T val) {
   auto iter = std::find(b.begin(), b.end(), val);
-  if (iter == b.end()) 
+  if (iter == b.end())
     std::cout << val << " not found" << std::endl;
   else
     std::cout << val << " found" << std::endl;

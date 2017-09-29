@@ -378,6 +378,7 @@ class btree
 
         typename std::vector<Element>::iterator _first_elem_iter() const
         {
+            // std::cout << "first node: " << _dummy_begin_iter()->_right << "\n";
             return _dummy_begin_iter()->_right->_elems.begin();
         }
 
@@ -506,7 +507,7 @@ class btree
             assert(el->_owner != nullptr);
             if (el->_val < first_elem->_val)
             {
-                std::cout << "first elem's left node is " <<   first_elem->_left << " " << _dummy << "\n";
+                // std::cout << "first elem's left node is " <<   first_elem->_left << " " << _dummy << "\n";
                 assert(el->_left == nullptr);
                 assert(first_elem->_val == _min_val);
                 // assert(first_elem->_left == _dummy);
@@ -519,7 +520,7 @@ class btree
             }
             if (el->_val > last_elem->_val)
             {
-                std::cout << "last elem's right node is " <<  last_elem->_right << " " << _dummy << "\n";
+                // std::cout << "last elem's right node is " <<  last_elem->_right << " " << _dummy << "\n";
                 assert(el->_right == nullptr);
                 assert(last_elem->_val == _max_val);
                 // assert(last_elem->_right == _dummy);
@@ -537,7 +538,7 @@ class btree
         {
             assert(_dummy->_elems.size() == 1U);
             // std::cout << "init size: " << _dummy->_elems.size() << std::endl;
-            std::cout << "dummy elem at " << _dummy<< "->" << &_dummy->_elems[0] << std::endl;
+            // std::cout << "dummy elem at " << _dummy<< "->" << &_dummy->_elems[0] << std::endl;
             _dummy_begin_iter()->_left = nullptr;
             _dummy_begin_iter()->_right = nullptr;
             _dummy_begin_iter()->_right = begin;
@@ -554,17 +555,16 @@ class btree
             }
         }
 
-        void clear()
+        void tree_clear()
         {
-            std::cout << "clear dummy..\n";
-            _first_elem_iter()->_left = nullptr;
-            _last_elem_iter()->_right = nullptr;
-            init_node_iter();
-            if (_dummy != nullptr)
+            // std::cout << "clear dummy..\n";
+            if (_root != nullptr)
             {
-                delete _dummy;
-                _dummy = nullptr;
+                _first_elem_iter()->_left = nullptr;
+                _last_elem_iter()->_right = nullptr;
             }
+            init_node_iter();
+
 
             std::cout << "clear root..\n";
             if (_root != nullptr)
@@ -573,12 +573,6 @@ class btree
                 delete _root;
                 _root = nullptr;
             }
-            // if (_dummy != nullptr)
-            // {
-            //     delete _dummy;
-            //     _dummy = nullptr;
-            // }
-            // init_node_iter();
             _elem_count = 0;
         }
 
@@ -600,8 +594,8 @@ class btree
         {
             _root = nullptr;
             _elem_count = 0;
-            _dummy = nullptr;
-            clear();
+            // _dummy = nullptr;
+            tree_clear();
         }
 
         void shallow_copy(btree<T>& rhs)
@@ -623,7 +617,7 @@ class btree
             _max_elem_in_node = rhs._max_elem_in_node;
 
             _root = new Node(_max_elem_in_node);
-            // init_node_iter();
+            _root->_parent = _dummy_end_iter();
 
             struct NodeInfo
             {
@@ -665,7 +659,7 @@ class btree
                     if (rhs._has_left_children_node(&i))
                     {
                         Node* tmp = new Node(_max_elem_in_node);
-                        tmp->_parent = ni.to_parent;
+                        tmp->_parent = it;
                         it->_left = tmp;
                         q.push(NodeInfo(i._left, tmp, it));
                     }
@@ -673,7 +667,7 @@ class btree
                     {
                         assert(it + 1 == ni.to_node->_elems.end());
                         Node* tmp = new Node(_max_elem_in_node);
-                        tmp->_parent = ni.to_parent;
+                        tmp->_parent = it;
                         it->_right = tmp;
                         q.push(NodeInfo(i._right, tmp, it));
                     }
@@ -681,8 +675,8 @@ class btree
                     it ++;
                 }
             }
-            _min_val = rhs._min_val;
-            _max_val = rhs._max_val;
+            assert(_min_val == rhs._min_val);
+            assert(_max_val == rhs._max_val);
         }
 
         // TODO make it non-recursive
@@ -747,6 +741,7 @@ class btree
                             }
                             auto tmp_val = ret->_val;
                             ret = cur_node->_parent;
+                            assert(ret != _dummy_end_iter());
                             if (tmp_val > ret->_val)
                             {
                                 // std::cout <<  tmp_val << " biggger: " << ret->_val << std::endl;
@@ -821,6 +816,7 @@ class btree
                     }
                     else
                     {
+                        // if do not have right child
                         // got back to parent
                         ret = cur_iter;
                         auto cur_val = ret->_val;
@@ -833,6 +829,7 @@ class btree
                                 break;
                             }
                             ret = cur_node->_parent;
+                            assert(ret != _dummy_end_iter());
                             if (cur_val > ret->_val)
                             {
                                 // std::cout <<  "\n" <<  cur_val << " biggger: " << ret->_val << std::endl;
@@ -866,7 +863,12 @@ template<typename T>
 btree<T>::~btree()
 {
     // TODO
-    clear();
+    tree_clear();
+    if (_dummy != nullptr)
+    {
+        delete _dummy;
+        _dummy = nullptr;
+    }
 }
 
 template<typename T>
@@ -887,7 +889,7 @@ btree<T>& btree<T>::operator=(const btree<T>& rhs)
 {
     if (this != &rhs)
     {
-        clear();
+        tree_clear();
         deep_copy(rhs);
     }
     return *this;
@@ -898,7 +900,7 @@ btree<T>& btree<T>::operator=(btree<T>&& rhs) noexcept
 {
     if (this != &rhs)
     {
-        clear();
+        tree_clear();
         shallow_copy(rhs);
         rhs.shallow_free();
     }
@@ -990,7 +992,7 @@ template<typename T>
 std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T& elem)
 {
     assert(_max_elem_in_node > 0);
-    // std::cout << "insert: " << elem << " current size: "<<  _elem_count << std::endl;
+    std::cout << "insert: " << elem << " current size: "<<  _elem_count << std::endl;
     if (_root == nullptr)
     {
         _root = new Node(_max_elem_in_node, elem, _dummy, _dummy, _dummy_end_iter());

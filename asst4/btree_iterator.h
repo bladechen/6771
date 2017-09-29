@@ -91,7 +91,16 @@ public:
     btree_iterator& operator++();
     btree_iterator  operator++(int);
 
-    operator btree_iterator<T, std::add_const>();
+
+    template <typename U = T, typename = typename std::enable_if<
+        std::is_same<Constness<U>, Identity<U> >::value && std::is_same<U, T>::value
+        >::type>
+    operator btree_iterator<T, std::add_const>()
+    {
+        // static_assert(std::is_same<Constness<T>, Identity<T>>::value, "fuck" );
+
+        return btree_iterator<T, std::add_const>(_owner,_it);
+    }
     // TODO non-const == const?
     template <typename T0,template <typename U0> class Constness0 ,typename T1,template <typename U1> class Constness1>
     friend  bool operator ==(const btree_iterator<T0, Constness0>& l, const btree_iterator<T1, Constness1>& r);
@@ -154,11 +163,12 @@ btree_iterator<T, Constness> btree_iterator<T, Constness>::operator++(int)
     return ret;
 }
 
-template <typename T,template <typename U> class Constness>
-btree_iterator<T, Constness>::operator btree_iterator<T, std::add_const>()
-{
-    return btree_iterator<T, std::add_const>(*this);
-}
+// template <typename T,template <typename U> class Constness>
+// std::enable_if_t<std::is_same<Constness<T>, Identity<T> >::value>::type
+// btree_iterator<T, Constness>::operator btree_iterator<T, std::add_const>()
+// {
+//     return btree_iterator<T, std::add_const>(*this);
+// }
 
 // template <typename T,template <typename U> class Constness>
     template <typename T0,template <typename U0> class Constness0 ,typename T1,template <typename U1> class Constness1>

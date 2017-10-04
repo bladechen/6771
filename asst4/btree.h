@@ -204,7 +204,7 @@ class btree
         size_t    _elem_count{0};
         size_t    _max_elem_in_node{0};
 
-        Node* _dummy{nullptr};
+        Node* _dummy{nullptr}; // used for end of the iterator
 
         enum ELEMENT_MARKER_E
         {
@@ -215,16 +215,19 @@ class btree
         struct Element
         {
             Element(enum ELEMENT_MARKER_E m, Node* owner): _marker{m}, _owner{owner}{};
+
             Element(const T& t,
                     Node* owner, Node* left, Node* right, enum ELEMENT_MARKER_E m = NORMAL_ELEMENT)
-                : _val{t}, _marker{m}, _left{left},_right{right}, _owner{owner}{
-                };
-            Element(const T& t):_val{t}, _marker{NORMAL_ELEMENT}{}
+                : _val{t}, _marker{m}, _left{left},_right{right}, _owner{owner}{};
+
+            Element(const T& t):_val{t}, _marker{NORMAL_ELEMENT}{};
+
             void clear()
             {
                 _right = nullptr;
                 _left = nullptr;
             }
+
             void destroy()
             {
                 if (_right != nullptr)
@@ -278,10 +281,14 @@ class btree
             {
                 // _elems.reserve(max_elems);
             };
-            Node(size_t max_elems, const T& t, Node* left, Node* right, const typename std::vector<Element>::iterator& parent)
+
+            Node(size_t max_elems,
+                 const T& t,
+                 Node* left,
+                 Node* right,
+                 const typename std::vector<Element>::iterator& parent)
                 :Node(max_elems)
             {
-                // std::cout << "creat new node: " << this << "\n";
                 _parent = parent;
                 _elems.emplace_back(t, this, left, right);
             }
@@ -313,7 +320,9 @@ class btree
             }
         };
 
+        // followings are internal function of the btree
 
+        // _dummy acts as end() and rend()
         typename std::vector<Element>::iterator _dummy_begin_iter() const
         {
             assert(_dummy->_elems.size() != 0U);
@@ -326,7 +335,7 @@ class btree
             return _dummy->_elems.begin();
         }
 
-        typename std::vector<Element>::iterator last_iter(typename std::vector<Element>& v) const
+        typename std::vector<Element>::iterator _last_iter(typename std::vector<Element>& v) const
         {
             if (v.begin() == v.end())
             {
@@ -335,22 +344,21 @@ class btree
             return v.end() - 1;
         }
 
-
+        // begin()
         typename std::vector<Element>::iterator _first_elem_iter() const
         {
-            // std::cout << "first node: " << _dummy_begin_iter()->_right << "\n";
             return _dummy_begin_iter()->_right->_elems.begin();
         }
 
+        // end() - 1
         typename std::vector<Element>::iterator _last_elem_iter() const
         {
-            return last_iter(_dummy_end_iter()->_left->_elems);
+            return _last_iter(_dummy_end_iter()->_left->_elems);
         }
 
         Element* _iter_to_elem(const typename std::vector<Element>::iterator& it) const
         {
             assert(it != it->_owner->_elems.end());
-            // assert(it->_owner );
             return &(*it);
         }
 
@@ -391,8 +399,8 @@ class btree
             {
                 // std::cout << "find " << elem << " at cur node: " << cur << std::endl;
                 auto it_bool_pair = cur->find_equal_or_large(elem);
-                // have find the one exactly equal to elem
                 // std::cout << "find at elem: " << &(*it_bool_pair.first) << "\n";
+                // have find the one exactly equal to elem
                 if (it_bool_pair.second == true && it_bool_pair.first->_val == elem)
                 {
                     return it_bool_pair.first;
@@ -402,7 +410,7 @@ class btree
                 {
                     return _dummy_end_iter();
                 }
-                else //if (it_bool_pair.second != )
+                else
                 {
                     // find one elem bigger than val, then should look at its _left branch
                     if (it_bool_pair.second == true)
@@ -412,11 +420,12 @@ class btree
                             cur = it_bool_pair.first->_left;
                             continue;
                         }
+                        // not find left child, no possible result
                         return _dummy_end_iter();
                     }
                     else
                     {
-                        const Element* last = _iter_to_elem(last_iter(cur->_elems));
+                        const Element* last = _iter_to_elem(_last_iter(cur->_elems));
                         if (_has_right_children_node(last))
                         {
                             cur = last->_right;
@@ -426,10 +435,12 @@ class btree
                     }
                 }
             }
+            // should not be here
             assert(0);
             return _dummy_end_iter();
         }
 
+        // whether btree need change begin and rbegin()
         void update_begin_end(Element* el)
         {
             assert(el != NULL);
@@ -444,6 +455,12 @@ class btree
 
             // smaller than current smallest one, update _dummy_begin
             assert(el->_owner != nullptr);
+            // because firstly insert the elem to vector, then call this function.
+            //
+            // for example suppose we have a btree [2, 3], and each node have max 10 elems.
+            // now inserting 1, so the vector become [1, 2, 3]
+            // there fore el->_val == 1 && first_elem->_val == 1
+            // but it needs to update elem[2]'s _left pointer to NULL, which is originally pointing to _dummy
             if (el->_val <= first_elem->_val)
             {
                 assert(el->_left == nullptr);
@@ -545,10 +562,10 @@ class btree
         void shallow_copy(btree<T>& rhs)
         {
             assert(empty());
+            destroy_dummy();
             _elem_count = rhs._elem_count;
             _max_elem_in_node = rhs._max_elem_in_node;
             _root = rhs._root;
-            destroy_dummy();
             _dummy = rhs._dummy;
             rhs._dummy = nullptr;
             rhs.init_dummy();
@@ -569,7 +586,6 @@ class btree
             _dummy = new Node(_max_elem_in_node);
             _dummy->_elems.emplace_back(DUMMY_EMELEMT, _dummy);
             init_node_iter();
-
         }
 
         void deep_copy(const btree<T>& rhs)
@@ -654,10 +670,8 @@ class btree
             {
                 return cur_iter;
             }
-            return right_most_iter(last_iter(cur_iter->_right->_elems));
+            return right_most_iter(_last_iter(cur_iter->_right->_elems));
         }
-
-
 
         typename std::vector<Element>::iterator left_most_iter(const typename std::vector<Element>::iterator& cur_iter) const
         {
@@ -670,8 +684,6 @@ class btree
                 return left_most_iter(cur_iter->_left->_elems.begin());
             }
         }
-
-
 
         typename std::vector<Element>::iterator backward_iter(const typename std::vector<Element>::iterator& cur_iter) const
         {
@@ -687,16 +699,13 @@ class btree
             {
                 Node* cur_node = cur_iter->_owner;
                 assert(cur_iter != cur_node->_elems.end()); // never locate at end()
-                // if ()
-                // std::cout << "\ncur: " << cur_iter->_val << "\n";
                 if (_has_left_children_node(_iter_to_elem(cur_iter)))
                 {
-                    ret = right_most_iter(last_iter(cur_iter->_left->_elems));
+                    ret = right_most_iter(_last_iter(cur_iter->_left->_elems));
                 }
                 else
                 {
                     ret = cur_iter;
-
                     while (true)
                     {
                         cur_node = ret->_owner;
@@ -726,7 +735,6 @@ class btree
             }
             return ret;
         }
-
 
         typename std::vector<Element>::iterator  forward_iter(const typename std::vector<Element>::iterator& cur_iter) const
         {
@@ -930,7 +938,6 @@ template<typename T>
 std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T& elem)
 {
     assert(_max_elem_in_node > 0);
-    // std::cout << "insert: " << elem << " current size: "<<  _elem_count << std::endl;
     if (_root == nullptr)
     {
         _root = new Node(_max_elem_in_node, elem, _dummy, _dummy, _dummy_end_iter());
@@ -989,17 +996,17 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T& elem)
             // the biggest one.
             else
             {
-                Element* last = _iter_to_elem(last_iter(cur->_elems));
+                Element* last = _iter_to_elem(_last_iter(cur->_elems));
                 if (_has_right_children_node(last))
                 {
-                    parent = last_iter(cur->_elems);
+                    parent = _last_iter(cur->_elems);
                     cur = last->_right;
                     continue;
                 }
                 else
                 {
                     _elem_count ++;
-                    Node* n = new Node(_max_elem_in_node, elem, nullptr, nullptr, last_iter(cur->_elems));
+                    Node* n = new Node(_max_elem_in_node, elem, nullptr, nullptr, _last_iter(cur->_elems));
                     update_begin_end(_iter_to_elem(n->_elems.begin()));
                     last->_right = n;
                     ret = typename btree<T>::iterator(this, n->_elems.begin());

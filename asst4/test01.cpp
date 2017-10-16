@@ -20,7 +20,6 @@
 #include <utility>
 
 #include "btree.h"
-using namespace std;
 
 using std::copy;
 using std::cout;
@@ -29,7 +28,7 @@ using std::ifstream;
 using std::ofstream;
 using std::set;
 using std::string;
-using std::pair;
+using namespace std;
 
 namespace {
 
@@ -123,11 +122,11 @@ int main(void) {
   btree<long> testContainer(99);
   set<long> stableContainer;
 
-  insertRandomNumbers(testContainer, stableContainer, 500000);
-  confirmEverythingMatches(testContainer , stableContainer);
+  insertRandomNumbers(testContainer, stableContainer, 1000000);
   btree<long> btcpy = testContainer;
   confirmEverythingMatches(btcpy, stableContainer);
 
+/***
 
   // this next portion was something I used to sort a bunch of chars
   // this was what I used to debug my iterator and made it work
@@ -149,11 +148,11 @@ int main(void) {
   const btree<char>& refstring = astring;
     btree<char>::const_iterator iter;
 	cout << "Voila!  Sorted!" << endl;
-	// for(iter = refstring.begin(); iter != refstring.end(); ++iter) {
-	// 	astring.insert(static_cast<char>(getRandom('A', 'z')));
-    //
-	// 	cout << *(iter) << " ";
-	// }
+	for(iter = refstring.begin(); iter != refstring.end(); ++iter) {
+		astring.insert(static_cast<char>(getRandom('A', 'z')));
+
+		cout << *(iter) << " ";
+	}
 
 	for(btree<char>::const_iterator iter = refstring.begin(); !(iter == refstring.end()); ++iter)
 		cout << *iter;
@@ -207,6 +206,7 @@ int main(void) {
   ofs1.close();
   ofs2.close();
 
+***/
 
   return 0;
 }

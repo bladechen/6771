@@ -1,5 +1,4 @@
 /**
- * TODO add noexcept
  * The btree is a linked structure which operates much like
  * a binary search tree, save the fact that multiple client
  * elements are stored in a single node.  Whereas a single element
@@ -459,7 +458,7 @@ class btree
             //
             // for example suppose we have a btree [2, 3], and each node have max 10 elems.
             // now inserting 1, so the vector become [1, 2, 3]
-            // there fore el->_val == 1 && first_elem->_val == 1
+            // therefore el->_val == 1 && first_elem->_val == 1
             // but it needs to update elem[2]'s _left pointer to NULL, which is originally pointing to _dummy
             if (el->_val <= first_elem->_val)
             {

@@ -28,5 +28,32 @@ int main(void) {
 
     foo(b);
 
+
+
+    btree<int> bb(2);
+
+    bb.insert(1);
+    bb.insert(2);
+    bb.insert(3);
+    bb.insert(4);
+    bb.insert(5);
+    bb.insert(6);
+    bb.insert(7);
+    bb.insert(9);
+    bb.insert(10);
+    bb.insert(20);
+    bb.insert(21);
+    bb.insert(24);
+    bb.insert(100);
+
+    for(btree<int>::iterator iter = bb.begin(); iter != bb.end(); ++iter)
+    {
+        (*iter) ++;
+        std::cout << *iter << std::endl;
+    }
+
+    foo(bb);
+
+
     return 0;
 }

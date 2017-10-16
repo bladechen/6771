@@ -1,4 +1,5 @@
 #include "BucketSort.h"
+#include <iostream>
 #include <cstring>
 #include <algorithm>
 #include <cmath>
@@ -29,17 +30,14 @@ void BucketSort::for_each(Function f)
     auto nbonus = n % ncores;
 
     _threads.clear();
-    // std::vector<std::thread> threads;
 
     size_t first = 0;
     for (auto i = 0U; i < ncores; ++i) {
         auto last = first + each + (i < nbonus ? 1 : 0);
-        _threads.emplace_back([first, last, &f] () {
-                              f(first, last);
-                             // for (auto s = first; s != last; ++s) {
-                             // f(first, last);
-                             // }
-                             });
+        _threads.emplace_back(f, first, last);
+        // _threads.emplace_back([first, last, &f] () {
+        //                       f(first, last);
+        //                      });
         first = last;
     }
 
@@ -50,6 +48,7 @@ void BucketSort::for_each(Function f)
 void BucketSort::int_to_digits()
 {
     _threads.clear();
+    _tmp_numbers.clear();
     _tmp_numbers.resize(_total_numbers);
     auto func = [&](size_t start, size_t end)
     {
@@ -113,7 +112,7 @@ void BucketSort::sort(unsigned int numCores)
     _total_numbers = numbersToSort.size();
     _mx = 0;
     _concurrency = numCores;
-    _threads.reserve(_concurrency);
+    // _threads.reserve(_concurrency);
     int_to_digits();
     for (int exp = static_cast<int>(_mx - 1); exp >= 0; --exp)
     {
@@ -125,8 +124,8 @@ void BucketSort::sort(unsigned int numCores)
 }
 void BucketSort::digits_to_int()
 {
-    std::vector<uint32_t> vec;
-    _threads.clear();
+    // std::vector<uint32_t> vec;
+    numbersToSort.resize(_total_numbers);
     auto func = [&](size_t start, size_t end)
     {
         std::string ss;
@@ -137,11 +136,9 @@ void BucketSort::digits_to_int()
             {
                 ss += _tmp_numbers[i].digit[j] - 1 + '0';
             }
-            vec.push_back(std::stoul(ss));
+            numbersToSort[i] = (std::stoul(ss));
         }
     };
     for_each(func);
-
-    numbersToSort = std::move(vec);
-
+    // vec.clear();
 }

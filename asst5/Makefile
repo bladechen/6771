@@ -1,4 +1,4 @@
-CPPFLAGS := -std=c++14 -Wall -Werror -O0 -ggdb3
+CPPFLAGS := -std=c++14 -Wall -Werror -O2 -ggdb3
 LDFLAGS := #-m32
 
 ifeq ($(ARCH),32)
@@ -9,10 +9,10 @@ endif
 
 
 CC := g++-4.9
-SRC_FILE := $(wildcard *.cpp)
+SRC_FILE :=  main.cpp BucketSort.cpp
 OBJ_FILE := $(SRC_FILE:.cpp=.o)
 INCLUDES := -I./
-LIBS = -lpthread
+LIBS = -pthread
 TARGET = bucket
 
 all: $(TARGET)

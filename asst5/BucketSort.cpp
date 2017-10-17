@@ -47,7 +47,6 @@ void BucketSort::for_each(Function f)
 
 void BucketSort::int_to_digits()
 {
-    _threads.clear();
     _tmp_numbers.clear();
     _tmp_numbers.resize(_total_numbers);
     auto func = [&](size_t start, size_t end)
@@ -105,30 +104,32 @@ void BucketSort::count_sort(int exp)
 
     // Build the output array
     std::mutex m;
-    int index = static_cast<int>(_total_numbers - 1);
+    std::atomic<int> cur_count_idx {10};
+    // int index = static_cast<int>(_total_numbers - 1);
     auto func1 = [&](size_t nouse1, size_t nouse2)
     {
         (void)nouse1;
         (void)nouse2;
         while (1)
         {
-            std::lock_guard<std::mutex> l{m};
-            if (index >= 0)
-            {
-                output[-- count[ static_cast<size_t>(_tmp_numbers[index].digit[exp])] ] = _tmp_numbers[index];
-                -- index;
-            }
-            else
+            if (cur_count_idx < 0)
             {
                 break;
+            }
+            int my_idx = cur_count_idx --;
+            for (int i = _total_numbers - 1; i >= 0; -- i)
+            {
+                int tmp = static_cast<int>(_tmp_numbers[i].digit[exp]);
+                if (tmp == my_idx)
+                {
+                    output[-- count[tmp]]= _tmp_numbers[i];
+                }
             }
         }
     };
     for_each(func1);
-    // Copy the output array to arr[], so that arr[] now
-    // contains sorted numbers according to current digit
     assert(_tmp_numbers.size() == output.size());
-    assert(index == -1);
+    // contains sorted numbers according to current digit
     _tmp_numbers = std::move(output);
 }
 
@@ -137,27 +138,23 @@ void BucketSort::sort(unsigned int numCores)
     _total_numbers = numbersToSort.size();
     _mx = 0;
     _concurrency = numCores;
-    // _threads.reserve(_concurrency);
+    _threads.reserve(_concurrency);
     int_to_digits();
     for (int exp = static_cast<int>(_mx - 1); exp >= 0; --exp)
     {
         count_sort(exp);
     }
-
     digits_to_int();
-
 }
+
 void BucketSort::digits_to_int()
 {
     numbersToSort.resize(_total_numbers);
     auto func = [&](size_t start, size_t end)
     {
-        // std::string ss;
         for (size_t i = start; i < end; ++ i)
         {
             uint32_t tmp_num = 0;
-            // ss.clear();
-            // std::cout << _tmp_numbers[i].count << std::endl;
             for (int j = 0; j < _tmp_numbers[i].count; ++ j)
             {
                 tmp_num = tmp_num * 10 + _tmp_numbers[i].digit[j] - 1;

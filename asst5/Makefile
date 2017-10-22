@@ -1,4 +1,4 @@
-CPPFLAGS := -std=c++14 -Wall -Werror -O2 -ggdb3
+CPPFLAGS :=   -ggdb3 -std=c++14 -Wall -Werror -O2
 LDFLAGS := #-m32
 
 ifeq ($(ARCH),32)
@@ -16,6 +16,8 @@ LIBS = -pthread
 TARGET = bucket
 
 all: $(TARGET)
+	# g++ -pg main.o BucketSort.o -o bucket -pthread
+
 
 all32:
 	make -e ARCH=32
@@ -28,7 +30,7 @@ all32:
     rm -f $@.$$$$
 
 $(TARGET): $(OBJ_FILE)
-	$(CC) $^ -o $@ $(LIBS) $(LDFLAGS)
+	$(CC) $^    -o $@ $(LIBS) $(LDFLAGS)
 
 .PHONY:clean
 clean:

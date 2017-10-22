@@ -4,7 +4,7 @@
 #include <thread>
 #include "BucketSort.h"
 int main() {
-    unsigned int totalNumbers =	20000000;
+    unsigned int totalNumbers =	10000000;
     unsigned int printIndex =	259000;
     // use totalNumbers required as the seed for the random
 
@@ -28,7 +28,7 @@ int main() {
 
     // const unsigned int numCores = std::thread::hardware_concurrency();
 
-    const unsigned int numCores = 8;
+    const unsigned int numCores = 1;
     pbs.sort(numCores);
 
     std::cout << "number of cores used: " << numCores << std::endl;

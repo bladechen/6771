@@ -8,7 +8,7 @@ else
 endif
 
 
-CC := g++-4.9
+CC := g++
 SRC_FILE :=  main.cpp BucketSort.cpp
 OBJ_FILE := $(SRC_FILE:.cpp=.o)
 INCLUDES := -I./

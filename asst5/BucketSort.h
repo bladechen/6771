@@ -24,7 +24,7 @@ struct BucketSort
         struct Number
         {
             char digit[8];
-            int count;
+            // int count;
             uint32_t original;
         };
 

@@ -29,7 +29,8 @@ int main() {
         }, "Monotomically increasing"},
     };
 
-    const unsigned int numCores = std::thread::hardware_concurrency();
+    const unsigned int numCores = 8;
+    // const unsigned int numCores = std::thread::hardware_concurrency();
 
     std::ofstream results("results.csv");
     results << totalNumbers << '\n';

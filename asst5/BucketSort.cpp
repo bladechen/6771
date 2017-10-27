@@ -1,5 +1,6 @@
 #include "BucketSort.h"
 #include <mutex>
+#include <memory>
 #include <iostream>
 #include <cstring>
 #include <algorithm>
@@ -7,32 +8,6 @@
 
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
-
-// #define assert void
-inline uint32_t get_digits(uint32_t n) {
-    static uint32_t powers[10] = {
-        0, 10, 100, 1000, 10000, 100000, 1000000,
-        10000000, 100000000, 1000000000,
-    };
-    static uint32_t maxdigits[33] = {
-        1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5,
-        5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10,
-    };
-    if (unlikely(n == 0))
-    {
-        return 1;
-    }
-    else
-    {
-        uint32_t bits = 32 - __builtin_clz(n);
-        assert(bits <= 32);
-        uint32_t digits = maxdigits[bits];
-        if (n < powers[digits - 1]) {
-            -- digits;
-        }
-        return digits;
-    }
-}
 
 template<class Function>
 void BucketSort::for_each(Function f)
@@ -65,8 +40,6 @@ void BucketSort::for_each(Function f)
         first = last;
     }
 
-    // assert(first == n);
-    // std::cout << _threads.size() << " " << ncores << std::endl;
     assert(_threads.size() + 1 == ncores);
     // doing part of jobs, because the f**k spec says it should limit thread count.
     f(i_do.first, i_do.second);
@@ -76,50 +49,49 @@ void BucketSort::for_each(Function f)
 
 void BucketSort::int_to_digits()
 {
-    _tmp_numbers.clear();
-    _tmp_numbers.resize(_total_numbers);
     auto func = [&](size_t start, size_t end)
     {
-        uint32_t mx = 0;
-        char buffer[64];
         for (size_t i = start; i < end; ++ i)
         {
-            mx = std::max(get_digits(numbersToSort[i]), mx);
-            int len = std::snprintf(buffer, sizeof(buffer), "%u", numbersToSort[i]);
-            // assert(len > 0);
-            memset(&_tmp_numbers[i], 0, sizeof(Number));
-            for (int j = 0; j < len; ++ j)
+            // len = 0;
+            char buffer[16] = {0};
+            uint32_t local_num = numbersToSort[i];
+            uint32_t original = local_num;
+            int tmp_len = snprintf (buffer, 15, "%u", local_num);
+            for (int j = 0 ; j < tmp_len; ++ j)
             {
-                _tmp_numbers[i].digit[j] = buffer[j] - '0' + 1;
+                buffer[j] = buffer [j] - '0' + 1;
             }
-            _tmp_numbers[i].count = len;
+            for (int j = 0; j < 6; j ++)
+            {
+                _tmp_numbers[i].digit[j] = buffer[j << 1] * 11 + buffer[(j << 1) + 1];
+            }
+            _tmp_numbers[i].original = original;
         }
-        uint32_t prev_value = _mx;
-        while(prev_value < mx &&
-              !_mx.compare_exchange_weak(prev_value, mx))
-            ;
     };
     for_each(func);
 }
 
 void BucketSort::count_sort(int exp)
 {
-    std::vector <Number> output; // output array
-    output.resize(_total_numbers);
-    std::atomic<int> count[11];
-    for (int i = 0; i < 11; ++ i)
+    // std::vector <Number> output; // output array
+    // output.resize(_total_numbers);
+    // uint32_t output
+    static const int SIZE = 11 * 11 ;
+    std::atomic<int> count[SIZE];
+    for (int i = 0; i < SIZE; ++ i)
     {
         count[i] = 0;
     }
     auto func = [&](size_t start, size_t end)
     {
         // Store count of occurrences in count[]
-        int tmp_count[11] = {0};
+        int tmp_count[SIZE] = {0};
         for (size_t i = start; i < end; ++ i)
         {
             ++ tmp_count[static_cast<size_t>(_tmp_numbers[i].digit[exp])];
         }
-        for (int i = 0; i < 11; ++ i)
+        for (int i = 0; i < SIZE; ++ i)
         {
             count[i] += tmp_count[i];
         }
@@ -128,12 +100,12 @@ void BucketSort::count_sort(int exp)
 
     // Change count[i] so that count[i] now contains actual
     //  position of this digit in output[]
-    for (int i = 1; i < 11; ++ i)
+    for (int i = 1; i < SIZE; ++ i)
         count[i] += count[i - 1];
 
     // Build the output array
     std::mutex m;
-    std::atomic<int> cur_count_idx {10};
+    std::atomic<int> cur_count_idx {SIZE};
     // int index = static_cast<int>(_total_numbers - 1);
     auto func1 = [&](size_t nouse1, size_t nouse2)
     {
@@ -156,21 +128,37 @@ void BucketSort::count_sort(int exp)
                 int tmp = static_cast<int>(_tmp_numbers[i].digit[exp]);
                 if (tmp == my_idx)
                 {
-                    output[-- local_count]= _tmp_numbers[i];
+                    _tmp_output[-- local_count]= _tmp_numbers[i];
                 }
             }
         }
     };
     for_each(func1);
-    assert(_tmp_numbers.size() == output.size());
+    // assert(_tmp_numbers.size() == output.size());
     // contains sorted numbers according to current digit
-    _tmp_numbers = std::move(output);
+    // _tmp_numbers = std::swap(_tmp_output);
+    auto tmp_ptr = _tmp_numbers;
+    _tmp_numbers = _tmp_output;
+    _tmp_output = tmp_ptr;
 }
 
 void BucketSort::sort(unsigned int numCores)
 {
     _total_numbers = numbersToSort.size();
-    _mx = 0;
+    if (_total_numbers == 0)
+    {
+        return;
+    }
+    if (_last_size < _total_numbers)
+    {
+        delete[] _tmp_output;
+        delete[] _tmp_numbers;
+        _tmp_output = new Number[_total_numbers];
+        _tmp_numbers = new Number[_total_numbers]; // TODO no malloc n
+        _last_size = _total_numbers;
+    }
+    memset (_tmp_numbers, 0, _total_numbers * sizeof (Number));
+    _mx = 6;
     _concurrency = numCores;
     _threads.reserve(_concurrency);
     int_to_digits();
@@ -179,22 +167,14 @@ void BucketSort::sort(unsigned int numCores)
         count_sort(exp);
     }
     digits_to_int();
+    // delete[] _tmp_numbers;
+    // delete[] _tmp_output;
 }
 
 void BucketSort::digits_to_int()
 {
-    numbersToSort.resize(_total_numbers);
-    auto func = [&](size_t start, size_t end)
+    for (size_t i = 0; i < _total_numbers; ++ i)
     {
-        for (size_t i = start; i < end; ++ i)
-        {
-            uint32_t tmp_num = 0;
-            for (int j = 0; j < _tmp_numbers[i].count; ++ j)
-            {
-                tmp_num = tmp_num * 10 + _tmp_numbers[i].digit[j] - 1;
-            }
-            numbersToSort[i] = tmp_num;
-        }
-    };
-    for_each(func);
+        numbersToSort[i] = _tmp_numbers[i].original;
+    }
 }

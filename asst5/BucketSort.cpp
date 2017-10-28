@@ -9,21 +9,6 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
-void set_cpu_affinity(int cur_cpu_num)
-{
-    cpu_set_t mask;
-    /* CPU_ZERO initializes all the bits in the mask to zero. */
-    CPU_ZERO( &mask );
-    /* CPU_SET sets only the bit corresponding to cpu. */
-    CPU_SET( cur_cpu_num , &mask );
-    /* sched_setaffinity returns 0 in success */
-    if( sched_setaffinity( 0, sizeof(mask), &mask ) == -1 )
-    {
-        // TODO delete me
-        printf("WARNING: Could not set CPU Affinity, continuing...\n");
-    }
-}
-
 template<class Function>
 void BucketSort::for_each(Function f)
 {
@@ -44,13 +29,7 @@ void BucketSort::for_each(Function f)
         // std::cout << first << " " << last << std::endl;
         if (flag)
         {
-            // _threads.emplace_back(f, first, last);
-            _threads.emplace_back([first, last, i, &f]()
-                                  {
-                                    set_cpu_affinity(i);
-                                    f(first, last);
-                                  }
-                                  );
+            _threads.emplace_back(f, first, last);
         }
         else
         {
@@ -75,6 +54,7 @@ void BucketSort::int_to_digits()
 
         size_t len = end - start;
         Number* local_tmp = new Number[len];
+        memset(local_tmp, 0, sizeof(Number) * len);
         for (size_t i = 0; i < len; ++ i)
         {
             char buffer[16] = {0};
@@ -171,7 +151,6 @@ void BucketSort::count_sort(int exp)
 
 void BucketSort::sort(unsigned int numCores)
 {
-    set_cpu_affinity(0);
     _total_numbers = numbersToSort.size();
     if (_total_numbers == 0)
     {

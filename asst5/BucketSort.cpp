@@ -54,11 +54,11 @@ void BucketSort::int_to_digits()
 
         size_t len = end - start;
         Number* local_tmp = new Number[len];
-        memset(local_tmp, 0, sizeof(Number) * len);
+        // memset(local_tmp, 0, sizeof(Number) * len);
         for (size_t i = 0; i < len; ++ i)
         {
             char buffer[16] = {0};
-            uint32_t local_num = numbersToSort[i];
+            uint32_t local_num = numbersToSort[i + start];
             local_tmp[i].original = local_num;
             int tmp_len = snprintf (buffer, 15, "%u", local_num);
             for (int j = 0 ; j < tmp_len; ++ j)
@@ -161,7 +161,7 @@ void BucketSort::sort(unsigned int numCores)
         delete[] _tmp_output;
         delete[] _tmp_numbers;
         _tmp_output = new Number[_total_numbers];
-        _tmp_numbers = new Number[_total_numbers]; // TODO no malloc n
+        _tmp_numbers = new Number[_total_numbers];
         _last_size = _total_numbers;
     }
     _mx = 6;

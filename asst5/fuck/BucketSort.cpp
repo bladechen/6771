@@ -9,20 +9,7 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
-void set_cpu_affinity(int cur_cpu_num)
-{
-    cpu_set_t mask;
-    /* CPU_ZERO initializes all the bits in the mask to zero. */
-    CPU_ZERO( &mask );
-    /* CPU_SET sets only the bit corresponding to cpu. */
-    CPU_SET( cur_cpu_num , &mask );
-    /* sched_setaffinity returns 0 in success */
-    if( sched_setaffinity( 0, sizeof(mask), &mask ) == -1 )
-    {
-        // TODO delete me
-        printf("WARNING: Could not set CPU Affinity, continuing...\n");
-    }
-}
+static const uint32_t decimal[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
 
 template<class Function>
 void BucketSort::for_each(Function f)
@@ -44,13 +31,7 @@ void BucketSort::for_each(Function f)
         // std::cout << first << " " << last << std::endl;
         if (flag)
         {
-            // _threads.emplace_back(f, first, last);
-            _threads.emplace_back([first, last, i, &f]()
-                                  {
-                                    set_cpu_affinity(i);
-                                    f(first, last);
-                                  }
-                                  );
+            _threads.emplace_back(f, first, last);
         }
         else
         {
@@ -68,42 +49,55 @@ void BucketSort::for_each(Function f)
         thread.join();
 }
 
-void BucketSort::int_to_digits()
+int max_digit = 1;
+
+// from stackoverflow
+// get the number of digit of n
+inline uint32_t get_digits(uint32_t n)
 {
-    auto func = [&](size_t start, size_t end)
-    {
-
-        size_t len = end - start;
-        Number* local_tmp = new Number[len];
-        for (size_t i = 0; i < len; ++ i)
-        {
-            char buffer[16] = {0};
-            uint32_t local_num = numbersToSort[i];
-            local_tmp[i].original = local_num;
-            int tmp_len = snprintf (buffer, 15, "%u", local_num);
-            for (int j = 0 ; j < tmp_len; ++ j)
-            {
-                buffer[j] = buffer [j] - '0' + 1;
-            }
-            for (int j = 0; j < 6; j ++)
-            {
-                local_tmp[i].digit[j] = buffer[j << 1] * 11 + buffer[(j << 1) + 1];
-            }
-            // _tmp_numbers[i].original = original;
-        }
-
-        memcpy(_tmp_numbers + start, local_tmp, sizeof (Number) * len);
-        delete [] local_tmp;
+    static uint32_t powers[10] = {
+        0, 10, 100, 1000, 10000, 100000, 1000000,
+        10000000, 100000000, 1000000000,
     };
-    for_each(func);
+    static unsigned maxdigits[33] = {
+        1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5,
+        5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10,
+    };
+    if (unlikely(!n))
+    {
+        return 1;
+    }
+    unsigned bits = 32 - __builtin_clz(n);
+    unsigned digits = maxdigits[bits];
+    if (n < powers[digits - 1])
+    {
+        -- digits;
+    }
+    return digits;
+}
+inline char get_digit(uint32_t number, int index)
+{
+    int digit_count = get_digits(number);
+    int tmp = index - (11 - digit_count);
+    if (unlikely(digit_count > max_digit))
+    {
+        max_digit = digit_count;
+    }
+    if (likely(tmp < 0))
+    {
+        return 0;
+    }
+    else
+    {
+        return 1 + (number / decimal[tmp] % 10);
+    }
 }
 
 void BucketSort::count_sort(int exp)
 {
-    // std::vector <Number> output; // output array
-    // output.resize(_total_numbers);
     // uint32_t output
-    static const int SIZE = 11 * 11 ;
+    static const int SIZE = 11 ;
+    // static uint32_t *tmp_digit = new uint32_t[_total_numbers];
     std::atomic<int> count[SIZE];
     for (int i = 0; i < SIZE; ++ i)
     {
@@ -115,7 +109,8 @@ void BucketSort::count_sort(int exp)
         int tmp_count[SIZE] = {0};
         for (size_t i = start; i < end; ++ i)
         {
-            ++ tmp_count[static_cast<size_t>(_tmp_numbers[i].digit[exp])];
+            _tmp_digit[i] = get_digit(numbersToSort[i], exp);
+            ++ tmp_count[static_cast<int>(_tmp_digit[i])];
         }
         for (int i = 0; i < SIZE; ++ i)
         {
@@ -153,53 +148,33 @@ void BucketSort::count_sort(int exp)
             // Number* local_tmp = new Number[local_count];
             for (int i = _total_numbers - 1; i >= 0; -- i)
             {
-                char tmp = (_tmp_numbers[i].digit[exp]);
-                if (tmp == my_idx)
+                if (_tmp_digit[i] == my_idx)
                 {
-                    _tmp_output[-- local_count]= _tmp_numbers[i];
+                    _output[-- local_count]= numbersToSort[i];
                 }
             }
         }
     };
     for_each(func1);
-    // contains sorted numbers according to current digit
-    // _tmp_numbers = std::swap(_tmp_output);
-    auto tmp_ptr = _tmp_numbers;
-    _tmp_numbers = _tmp_output;
-    _tmp_output = tmp_ptr;
+    std::swap(numbersToSort, _output);
+    // _output.reserve(_total_numbers);
 }
 
 void BucketSort::sort(unsigned int numCores)
 {
-    set_cpu_affinity(0);
     _total_numbers = numbersToSort.size();
     if (_total_numbers == 0)
     {
         return;
     }
-    if (_last_size < _total_numbers)
-    {
-        delete[] _tmp_output;
-        delete[] _tmp_numbers;
-        _tmp_output = new Number[_total_numbers];
-        _tmp_numbers = new Number[_total_numbers]; // TODO no malloc n
-        _last_size = _total_numbers;
-    }
-    _mx = 6;
     _concurrency = numCores;
     _threads.reserve(_concurrency);
-    int_to_digits();
-    for (int exp = static_cast<int>(_mx - 1); exp >= 0; --exp)
+    _output.resize(_total_numbers);
+    _tmp_digit = new char[_total_numbers];
+    for (int exp = 1; exp <= max_digit; ++ exp)
     {
         count_sort(exp);
     }
-    digits_to_int();
+    delete [] _tmp_digit;
 }
 
-void BucketSort::digits_to_int()
-{
-    for (size_t i = 0; i < _total_numbers; ++ i)
-    {
-        numbersToSort[i] = _tmp_numbers[i].original;
-    }
-}

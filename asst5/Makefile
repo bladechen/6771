@@ -1,4 +1,4 @@
-CPPFLAGS :=   -ggdb3 -std=c++14 -Wall -Werror -O2
+CPPFLAGS :=   -ggdb3 -std=c++14 -Wall -Werror -O0
 LDFLAGS := #-m32
 
 ifeq ($(ARCH),32)

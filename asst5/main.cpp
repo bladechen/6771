@@ -3,7 +3,51 @@
 #include <mutex>
 #include <thread>
 #include "BucketSort.h"
+void my_test()
+{
+
+    BucketSort pbs;
+
+    pbs.numbersToSort.push_back(1);
+    pbs.numbersToSort.push_back(8);
+    pbs.numbersToSort.push_back(2);
+    pbs.numbersToSort.push_back(0);
+    pbs.sort(8);
+    for (int i = 0; i < (int)(pbs.numbersToSort.size()); ++ i)
+    {
+        std::cout <<  pbs.numbersToSort[i] << std::endl;
+    }
+
+    pbs.numbersToSort.clear();
+
+    pbs.numbersToSort.push_back(11);
+    pbs.numbersToSort.push_back(1);
+    pbs.sort(8);
+    for (int i = 0; i < (int)(pbs.numbersToSort.size()); ++ i)
+    {
+        std::cout <<  pbs.numbersToSort[i] << std::endl;
+    }
+
+    pbs.numbersToSort.clear();
+
+    pbs.numbersToSort.push_back(9);
+    pbs.numbersToSort.push_back(0);
+    pbs.numbersToSort.push_back(53);
+    pbs.numbersToSort.push_back(5);
+    pbs.numbersToSort.push_back(51);
+    pbs.numbersToSort.push_back(2511);
+    pbs.sort(8);
+    for (int i = 0; i < (int)(pbs.numbersToSort.size()); ++ i)
+    {
+        std::cout <<  pbs.numbersToSort[i] << std::endl;
+    }
+
+
+
+}
+
 int main() {
+    my_test();
     unsigned int totalNumbers =	10000000;
     unsigned int printIndex =	259000;
     // use totalNumbers required as the seed for the random

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+function usage {
+  >&2 echo "Usage: ./run program_name [name_of_data_file]"
+  >&2 echo "  Builds and runs the program"
+  >&2 echo "  Optionally pipes in a *.dat file in via stdin"
+}
+
+test "$#" -eq 0 && usage && exit 1
+
+root=$(git rev-parse --show-toplevel)
+# Will only find files one level down from /source
+dirname=$(basename $(pwd))
+
+cd "$root"
+mkdir -p build/debug
+cd build/debug
+cmake -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_BUILD_TYPE=Debug "$root"
+
+make || exit 1
+echo ""
+cd "$root"/source/$dirname
+if [ "$#" -eq "1" ]
+then
+    "$root/build/debug/source/$dirname/$1" $2 $3
+else
+    cat "$2.dat" | "$root/build/debug/source/$dirname/$1"
+fi

@@ -91,7 +91,7 @@ template<typename N, typename E>
 Graph<N, E>::Graph(){}
 
 template<typename N, typename E>
-Graph<N, E>::Graph(const Graph& g)
+Graph<N, E>::Graph(const Graph<N, E>& g)
 {
     _deep_copy(g);
 }

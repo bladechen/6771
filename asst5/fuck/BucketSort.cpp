@@ -1,15 +1,10 @@
-#include "BucketSort.h"
-#include <mutex>
-#include <memory>
-#include <iostream>
-#include <cstring>
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <iostream>
+#include <memory>
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
-
-static const uint32_t decimal[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+#include "BucketSort.h"
 
 template<class Function>
 void BucketSort::for_each(Function f)
@@ -43,55 +38,12 @@ void BucketSort::for_each(Function f)
     }
 
     assert(_threads.size() + 1 == ncores);
-    // doing part of jobs, because the f**k spec says it should limit thread count.
+    // doing part of jobs, because the spec says it should limit thread count.
     f(i_do.first, i_do.second);
     for (auto& thread : _threads)
         thread.join();
 }
 
-int max_digit = 1;
-
-// from stackoverflow
-// get the number of digit of n
-inline uint32_t get_digits(uint32_t n)
-{
-    static uint32_t powers[10] = {
-        0, 10, 100, 1000, 10000, 100000, 1000000,
-        10000000, 100000000, 1000000000,
-    };
-    static unsigned maxdigits[33] = {
-        1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5,
-        5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10,
-    };
-    if (unlikely(!n))
-    {
-        return 1;
-    }
-    unsigned bits = 32 - __builtin_clz(n);
-    unsigned digits = maxdigits[bits];
-    if (n < powers[digits - 1])
-    {
-        -- digits;
-    }
-    return digits;
-}
-inline char get_digit(uint32_t number, int index)
-{
-    int digit_count = get_digits(number);
-    int tmp = index - (11 - digit_count);
-    if (unlikely(digit_count > max_digit))
-    {
-        max_digit = digit_count;
-    }
-    if (likely(tmp < 0))
-    {
-        return 0;
-    }
-    else
-    {
-        return 1 + (number / decimal[tmp] % 10);
-    }
-}
 
 void BucketSort::count_sort(int exp)
 {
@@ -125,9 +77,7 @@ void BucketSort::count_sort(int exp)
         count[i] += count[i - 1];
 
     // Build the output array
-    std::mutex m;
     std::atomic<char> cur_count_idx {SIZE};
-    // int index = static_cast<int>(_total_numbers - 1);
     auto func1 = [&](size_t nouse1, size_t nouse2)
     {
         (void)nouse1;
@@ -143,9 +93,8 @@ void BucketSort::count_sort(int exp)
             {
                 break;
             }
-            int local_count = count[static_cast<int>(my_idx)]; // caching line invalid is high overhead
+            int local_count = count[static_cast<int>(my_idx)]; // caching line invalidation is high overhead
 
-            // Number* local_tmp = new Number[local_count];
             for (int i = _total_numbers - 1; i >= 0; -- i)
             {
                 if (_tmp_digit[i] == my_idx)
@@ -157,7 +106,6 @@ void BucketSort::count_sort(int exp)
     };
     for_each(func1);
     std::swap(numbersToSort, _output);
-    // _output.reserve(_total_numbers);
 }
 
 void BucketSort::sort(unsigned int numCores)
@@ -171,10 +119,10 @@ void BucketSort::sort(unsigned int numCores)
     _threads.reserve(_concurrency);
     _output.resize(_total_numbers);
     _tmp_digit = new char[_total_numbers];
-    for (int exp = 1; exp <= max_digit; ++ exp)
+    _max_digit = 10; // 2^32 has 10 digits
+    for (int exp = 1; exp <= _max_digit; ++ exp)
     {
         count_sort(exp);
     }
     delete [] _tmp_digit;
 }
-
